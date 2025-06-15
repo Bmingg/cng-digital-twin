@@ -12,7 +12,7 @@ import { TopLeftBar } from "@/components/topleft/top_left_bar"
 export function DataTable({ selectedOption, searchValue }) {
   const getTableConfig = (option) => {
   switch (option) {
-    case 'Truck types':
+    case 'truckTypes':
       return {
         columns: [
           { key: 'id', label: 'ID' },
@@ -30,7 +30,7 @@ export function DataTable({ selectedOption, searchValue }) {
         ]
       };
     
-    case 'Orders':
+    case 'orders':
       return {
         columns: [
           { key: 'id', label: 'ID' },

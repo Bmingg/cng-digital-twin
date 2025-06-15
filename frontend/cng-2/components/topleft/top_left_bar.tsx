@@ -47,15 +47,15 @@ export function TopLeftBar({ onDropdownChange, onAdd, onDelete, onFilter, onSear
               }}
             >
               <MenuItem value="">Select option</MenuItem>
-              <MenuItem value="Truck types">Truck types</MenuItem>
-              <MenuItem value="Gas tank types">Gas tank types</MenuItem>
-              <MenuItem value="Gas tank">Gas tank</MenuItem>
-              <MenuItem value="Trucks">Trucks</MenuItem>
-              <MenuItem value="Compressor types">Compressor types</MenuItem>
-              <MenuItem value="Compressors">Compressors</MenuItem>
-              <MenuItem value="Compressor stations">Compressor stations</MenuItem>
-              <MenuItem value="Customers">Customers</MenuItem>
-              <MenuItem value="Orders">Orders</MenuItem>
+              <MenuItem value="truckTypes">Truck types</MenuItem>
+              <MenuItem value="gasTankTypes">Gas tank types</MenuItem>
+              <MenuItem value="gasTank">Gas tank</MenuItem>
+              <MenuItem value="trucks">Trucks</MenuItem>
+              <MenuItem value="compressorTypes">Compressor types</MenuItem>
+              <MenuItem value="compressors">Compressors</MenuItem>
+              <MenuItem value="compressorStations">Compressor stations</MenuItem>
+              <MenuItem value="customers">Customers</MenuItem>
+              <MenuItem value="orders">Orders</MenuItem>
               {/* Add more options as needed */}
             </Select>
           </FormControl>

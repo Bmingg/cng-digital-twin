@@ -3,9 +3,11 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { TopLeftBar } from './topleft/top_left_bar';
 import { DataTable } from './topleft/data_table';
+import { AddDataPopup } from './topleft/add_popup';
 import { BottomLeftBar } from './bottom/bottom_left_bar';
 import { ScheduleTable } from './bottom/schedule_table';
 import { TabContainer } from './bottom/tab_container';
+
 
 interface HorizontalPanelsProps {
   topContent: React.ReactNode;
@@ -144,6 +146,7 @@ export function ResizablePanels() {
   const [selectedOption, setSelectedOption] = useState('');
   const [searchValue, setSearchValue] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
+  const [isAddPopupOpen, setIsAddPopupOpen] = useState(false);
 
   const handleDropdownChange = (value) => {
     setSelectedOption(value);
@@ -153,10 +156,26 @@ export function ResizablePanels() {
     setSelectedDate(value);
   };
 
-    const handleAdd = () => {
+  const handleAdd = () => {
     console.log('Add button clicked from parent');
     // Implement add logic here
+    console.log('selectedOption:', selectedOption);
+    console.log('isAddPopupOpen before:', isAddPopupOpen);
+    setIsAddPopupOpen(true);
+    console.log('isAddPopupOpen after:', true);
   };
+
+  const handleClosePopup = () => {
+    setIsAddPopupOpen(false);
+  };
+
+  const handleSaveData = (data) => {
+    // Save the data from the popup add in top-left data table
+    // Don't know how to do this yet, just logging for now
+    console.log('Saved data:', data);
+    setIsAddPopupOpen(false);
+  }
+  
 
   const handleDelete = (selectedRowIndices) => {
     console.log('Delete button clicked, selected rows:', selectedRowIndices);
@@ -237,7 +256,14 @@ export function ResizablePanels() {
                   selectedOption={selectedOption}
                   searchValue={searchValue}
                 />
+                <AddDataPopup
+                  isOpen={isAddPopupOpen}
+                  onClose={handleClosePopup}
+                  onSave={handleSaveData}
+                  selectedOption={selectedOption}
+                />
               </div>
+              
             }
             rightContent={
               <div className="h-full">
