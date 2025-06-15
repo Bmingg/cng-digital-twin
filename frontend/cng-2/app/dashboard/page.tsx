@@ -1,11 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { CustomResizableLayout } from "@/components/custom-resizable-layout"
-import { DataManagementPanel } from "@/components/data-management-panel"
-import { ScheduleListPanel } from "@/components/schedule-list-panel"
-import { ScheduleDetailPanel } from "@/components/schedule-detail-panel"
-import { MapPanel } from "@/components/map-panel"
 import { TopBar } from "@/components/top-bar"
 // import { ResizablePanels } from "@/components/test_windows"
 import { ResizablePanels } from "@/components/resizable-panels"
