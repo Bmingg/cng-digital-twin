@@ -1,16 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from "react";
-import { TopLeftBar } from "./topleft/top_left_bar";
 import { DataTable } from "./topleft/data_table";
 import { BottomLeftBar } from "./bottom/bottom_left_bar";
 import { ScheduleTable, TableConfig } from "./bottom/schedule_table";
 import { TabContainer } from "./bottom/tab_container";
-import useSWR from "swr";
-import { httpGet$GetResourcesTruckTypes } from "@/lib/commands/GetResourcesTruckTypes/fetcher";
-import { CLIENT_ENV } from "@/lib/env";
-        
-import { AddDataPopup } from './topleft/add_popup';
+
 import { AddSchedulePopup } from './bottom/add_schedule_popup';
 
 interface HorizontalPanelsProps {
@@ -139,11 +134,6 @@ function VerticalPanels({ leftContent, rightContent }: VerticalPanelsProps) {
   );
 }
 
-// Main ResizablePanels component
-export function ResizablePanels() {
-  const [isAddPopupOpen, setIsAddPopupOpen] = useState(false);
-  const [isAddSchedulePopupOpen, setIsAddSchedulePopupOpen] = useState(false);
-
 type Tab = {
   id: string;
   name: string;
@@ -156,51 +146,25 @@ type Props = {
 
 // Main ResizablePanels component
 export function ResizablePanels({ token }: Props) {
-  const [selectedDate, setSelectedDate] = useState("");
 
+  const [selectedDate, setSelectedDate] = useState("");
+  const [isAddSchedulePopupOpen, setIsAddSchedulePopupOpen] = useState(false);
+  
   const handleDropdownDateChange = (value: string) => {
     setSelectedDate(value);
   };
-
   const handleAddSchedule = () => {
     setIsAddSchedulePopupOpen(true);
   };
-
   const handleCloseSchedule = () => {
     setIsAddSchedulePopupOpen(false);
   };
-
   const handleSaveSchedule = (ScheduleData) => {
     // Save the ScheduleData from the popup add in bottom-left schedule table
     // Don't know how to do this yet, just logging for now
     console.log('Saved data:', ScheduleData);
     setIsAddSchedulePopupOpen(false);
   }
-
-
-  const handleAdd = () => {
-    console.log('Add button clicked from parent');
-    // Implement add logic here
-    console.log('selectedOption:', selectedOption);
-    console.log('isAddPopupOpen before:', isAddPopupOpen);
-    setIsAddPopupOpen(true);
-    console.log('isAddPopupOpen after:', true);
-  };
-
-  const handleClosePopup = () => {
-    setIsAddPopupOpen(false);
-  };
-
-  const handleSaveData = (data) => {
-    // Save the data from the popup add in top-left data table
-    // Don't know how to do this yet, just logging for now
-    console.log('Saved data:', data);
-    setIsAddPopupOpen(false);
-  }
- 
-    console.log("Add Schedule button clicked from parent");
-    // Implement add schedule logic here
-  };
 
   const [openTabs, setOpenTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState<string | undefined>();
@@ -250,13 +214,8 @@ export function ResizablePanels({ token }: Props) {
           <VerticalPanels
             leftContent={
               <div className="h-full">
-                <DataTable token={token} />
-                
-                <AddDataPopup
-                  isOpen={isAddPopupOpen}
-                  onClose={handleClosePopup}
-                  onSave={handleSaveData}
-                  selectedOption={selectedOption}
+                <DataTable 
+                  token={token}
                 />
               </div>
             }

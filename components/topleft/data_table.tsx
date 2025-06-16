@@ -7,6 +7,7 @@ import React from "react";
 import useSWR from "swr";
 import { TopLeftBar } from "./top_left_bar";
 import { httpDelete$DeleteResources } from "@/lib/commands/DeleteResources/fetcher";
+import { AddDataPopup } from './add_popup';
 
 type Props = {
   token: string;
@@ -16,6 +17,28 @@ export function DataTable({ token }: Props) {
   const [selectedOption, setSelectedOption] = React.useState("");
   const [searchValue, setSearchValue] = React.useState("");
   const [selectedRow, setSelectedRow] = React.useState<string | undefined>();
+
+  const [isAddPopupOpen, setIsAddPopupOpen] = React.useState(false);
+  
+  const handleAdd = () => {
+    console.log('Add button clicked from parent');
+    // Implement add logic here
+    console.log('isAddPopupOpen before:', isAddPopupOpen);
+    setIsAddPopupOpen(true);
+    console.log('isAddPopupOpen after:', true);
+  };
+
+  const handleClosePopup = () => {
+    setIsAddPopupOpen(false);
+  };
+
+  const handleSaveData = (data) => {
+    // Save the data from the popup add in top-left data table
+    // Don't know how to do this yet, just logging for now
+    console.log('Saved data:', data);
+    setIsAddPopupOpen(false);
+  }
+
   const swr = {
     GetResourcesTructTypes: useSWR(
       ["/api/resources/truck-types/"],
@@ -37,7 +60,7 @@ export function DataTable({ token }: Props) {
 
   const handleDelete = async () => {
     if (!selectedRow) return;
-    if (selectedOption === "Truck Types") {
+    if (selectedOption === "truckTypes") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV}/api/resources/truck-types`,
         { id: selectedRow }
@@ -45,10 +68,6 @@ export function DataTable({ token }: Props) {
     }
   };
 
-  const handleAdd = () => {
-    console.log("Add button clicked from parent");
-    // Implement add logic here
-  };
   const handleFilter = () => {
     console.log("Filter button clicked from parent");
     // Implement filter logic here
@@ -177,6 +196,12 @@ export function DataTable({ token }: Props) {
             Please select an option from the dropdown
           </div>
         </div>
+        <AddDataPopup
+            isOpen={isAddPopupOpen}
+            onClose={handleClosePopup}
+            onSave={handleSaveData}
+            selectedOption={selectedOption}
+        />
       </>
     );
   }
