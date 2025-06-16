@@ -7,6 +7,7 @@ import { AddDataPopup } from './topleft/add_popup';
 import { BottomLeftBar } from './bottom/bottom_left_bar';
 import { ScheduleTable } from './bottom/schedule_table';
 import { TabContainer } from './bottom/tab_container';
+import { AddSchedulePopup } from './bottom/add_schedule_popup';
 
 
 interface HorizontalPanelsProps {
@@ -147,6 +148,7 @@ export function ResizablePanels() {
   const [searchValue, setSearchValue] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [isAddPopupOpen, setIsAddPopupOpen] = useState(false);
+  const [isAddSchedulePopupOpen, setIsAddSchedulePopupOpen] = useState(false);
 
   const handleDropdownChange = (value) => {
     setSelectedOption(value);
@@ -155,6 +157,22 @@ export function ResizablePanels() {
   const handleDropdownDateChange = (value) => {
     setSelectedDate(value);
   };
+
+  const handleAddSchedule = () => {
+    setIsAddSchedulePopupOpen(true);
+  };
+
+  const handleCloseSchedule = () => {
+    setIsAddSchedulePopupOpen(false);
+  };
+
+  const handleSaveSchedule = (ScheduleData) => {
+    // Save the ScheduleData from the popup add in bottom-left schedule table
+    // Don't know how to do this yet, just logging for now
+    console.log('Saved data:', ScheduleData);
+    setIsAddSchedulePopupOpen(false);
+  }
+
 
   const handleAdd = () => {
     console.log('Add button clicked from parent');
@@ -189,11 +207,6 @@ export function ResizablePanels() {
 
   const handleSearch = (value) => {
     setSearchValue(value);
-  };
-
-  const handleAddSchedule = () => {
-    console.log('Add Schedule button clicked from parent');
-    // Implement add schedule logic here
   };
 
   const [openTabs, setOpenTabs] = useState([]);
@@ -283,6 +296,12 @@ export function ResizablePanels() {
                 <ScheduleTable
                   selectedDate={selectedDate}
                   onRowDoubleClick={handleRowDoubleClick}
+                />
+                <AddSchedulePopup
+                  isOpen={isAddSchedulePopupOpen}
+                  onClose={handleCloseSchedule}
+                  onSave={handleSaveSchedule}
+                  selectedDate={selectedDate}
                 />
               </div>
             }

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus, Trash } from "lucide-react";
 import { IconButton } from '@mui/material';
+import { AddAssignmentPopup } from './add_assignment_popup'; // Import the popup component
 
 // Define the types for your tab data
 interface TabData {
@@ -27,6 +28,7 @@ interface TabContainerProps {
 
 interface TabContentProps {
   data: TabData | undefined;
+  onAddAssignment: (assignmentData: any) => void;
 }
 
 // Sample data structure for the table - replace with your actual data structure
@@ -87,22 +89,42 @@ const getOrdersForSchedule = (scheduleId: string): OrderData[] => {
   ];
 };
 
-function TabContent({ data }: TabContentProps) {
+function TabContent({ data, onAddAssignment }: TabContentProps) {
+  const [isAddPopupOpen, setIsAddPopupOpen] = useState(false);
+  
   if (!data) return null;
   
   // Get orders for this schedule
   const orders = getOrdersForSchedule(data.id);
+
+  const handleAddClick = () => {
+    setIsAddPopupOpen(true);
+  };
+
+  const handlePopupClose = () => {
+    setIsAddPopupOpen(false);
+  };
+
+  const handlePopupSave = (assignmentData: any) => {
+    console.log('New assignment data:', assignmentData);
+    onAddAssignment(assignmentData);
+    setIsAddPopupOpen(false);
+  };
   
   return (
     <div className="h-full overflow-auto bg-brand-F1EDEA">
       {/* Action buttons */}
       <div className="flex px-1 gap-3 border-b border-gray-200 bg-brand-BADFCD">
-        <IconButton className="flex items-center gap-1 size-sm" sx={styleHover}>
+        <IconButton 
+          className="flex items-center gap-1 size-sm" 
+          sx={styleHover}
+          onClick={handleAddClick}
+        >
           <Plus className="h-4 w-4" color="#003b2a"/>
-          </IconButton>
-          <IconButton className="flex items-center gap-1 size-sm" sx={styleHover}>
+        </IconButton>
+        <IconButton className="flex items-center gap-1 size-sm" sx={styleHover}>
           <Trash className="h-4 w-4" color="#003b2a"/>
-          </IconButton>
+        </IconButton>
       </div>
 
       {/* Table */}
@@ -172,11 +194,26 @@ function TabContent({ data }: TabContentProps) {
           </tbody>
         </table>
       </div>
+
+      {/* Add Assignment Popup */}
+      <AddAssignmentPopup 
+        isOpen={isAddPopupOpen}
+        onClose={handlePopupClose}
+        onSave={handlePopupSave}
+      />
     </div>
   );
 }
 
 export function TabContainer({ tabs, activeTab, onTabChange, onTabClose }: TabContainerProps) {
+  const handleAddAssignment = (assignmentData: any) => {
+    // Handle the new assignment data here
+    // This could involve updating your state, making API calls, etc.
+    console.log('Assignment added to schedule:', assignmentData);
+    // You might want to pass this up to the parent component
+    // or handle it directly here based on your data flow
+  };
+
   if (tabs.length === 0) {
     return (
       <div className="flex items-center justify-center h-full bg-brand-BDC3C0 rounded-lg border-2 border-dashed border-gray-300">
@@ -231,7 +268,10 @@ export function TabContainer({ tabs, activeTab, onTabChange, onTabClose }: TabCo
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab && activeTabData && (
-          <TabContent data={activeTabData.data} />
+          <TabContent 
+            data={activeTabData.data} 
+            onAddAssignment={handleAddAssignment}
+          />
         )}
       </div>
     </div>
