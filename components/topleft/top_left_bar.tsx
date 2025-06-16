@@ -1,6 +1,4 @@
 "use client";
-import { Save, RotateCcw, Undo, Redo } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Select,
   MenuItem,
@@ -76,12 +74,12 @@ export function TopLeftBar({
               <MenuItem value="">Select option</MenuItem>
               <MenuItem value="truckTypes">Truck types</MenuItem>
               <MenuItem value="gasTankTypes">Gas tank types</MenuItem>
-              <MenuItem value="gasTank">Gas tank</MenuItem>
+              <MenuItem value="gasTanks">Gas tanks</MenuItem>
               <MenuItem value="trucks">Trucks</MenuItem>
               <MenuItem value="compressorTypes">Compressor types</MenuItem>
               <MenuItem value="compressors">Compressors</MenuItem>
-              <MenuItem value="compressorStations">
-                Compressor stations
+              <MenuItem value="compressionStations">
+                Compression stations
               </MenuItem>
               <MenuItem value="customers">Customers</MenuItem>
               <MenuItem value="orders">Orders</MenuItem>

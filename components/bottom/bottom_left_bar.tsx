@@ -52,9 +52,10 @@ const generateLastFiveDates = () => {
 type Props = {
   onDropdownDateChange: (value: string) => void;
   onAddSchedule: () => void;
+  onDeleteSchedule: () => void;
 };
 
-export function BottomLeftBar({ onDropdownDateChange, onAddSchedule }: Props) {
+export function BottomLeftBar({ onDropdownDateChange, onAddSchedule, onDeleteSchedule }: Props) {
   const [selected, setSelected] = useState("");
 
   const dateOptions = useMemo(() => generateLastFiveDates(), []);
@@ -132,7 +133,10 @@ export function BottomLeftBar({ onDropdownDateChange, onAddSchedule }: Props) {
         >
           <Plus className="h-4 w-4" color="#003b2a" />
         </IconButton>
-        <IconButton className="flex items-center gap-1" sx={styleHover}>
+        <IconButton 
+          onClick={onDeleteSchedule}
+          className="flex items-center gap-1" 
+          sx={styleHover}>
           <Trash className="h-4 w-4" color="#003b2a" />
         </IconButton>
       </div>
