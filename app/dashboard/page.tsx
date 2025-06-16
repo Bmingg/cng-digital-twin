@@ -1,18 +1,25 @@
-"use client"
+import { cookies } from "next/headers";
+import PageDashboard from "./_containers/PageDashboard";
+import { httpGet$GetLoginStatus } from "@/lib/commands/GetLoginStatus/fetcher";
+import { CLIENT_ENV } from "@/lib/env";
+import { redirect } from "next/navigation";
 
-import { useState } from "react"
-import { TopBar } from "@/components/top-bar"
-// import { ResizablePanels } from "@/components/test_windows"
-import { ResizablePanels } from "@/components/resizable-panels"
-
-export default function Dashboard() {
-
-  return (
-    <div className="flex flex-col h-screen w-full bg-gray-100">
-      <TopBar />
-      <div className="flex-1 p-2 bg-gray-50">
-        <ResizablePanels />
-      </div>
-    </div>
-  )
+export default async function Dashboard() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  if (!token) {
+    redirect("/login");
+  }
+  const user = await httpGet$GetLoginStatus(
+    `${CLIENT_ENV.BACKEND_URL}/api/users/me`,
+    {
+      token,
+    }
+  ).catch((error) => {
+    return undefined;
+  });
+  if (!user) {
+    redirect("/login");
+  }
+  return <PageDashboard user={user} token={token} />;
 }

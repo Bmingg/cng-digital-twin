@@ -1,31 +1,37 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useCallback } from 'react';
-import { TopLeftBar } from './topleft/top_left_bar';
-import { DataTable } from './topleft/data_table';
+import React, { useState, useRef, useCallback } from "react";
+import { TopLeftBar } from "./topleft/top_left_bar";
+import { DataTable } from "./topleft/data_table";
+import { BottomLeftBar } from "./bottom/bottom_left_bar";
+import { ScheduleTable, TableConfig } from "./bottom/schedule_table";
+import { TabContainer } from "./bottom/tab_container";
+import useSWR from "swr";
+import { httpGet$GetResourcesTruckTypes } from "@/lib/commands/GetResourcesTruckTypes/fetcher";
+import { CLIENT_ENV } from "@/lib/env";
+        
 import { AddDataPopup } from './topleft/add_popup';
-import { BottomLeftBar } from './bottom/bottom_left_bar';
-import { ScheduleTable } from './bottom/schedule_table';
-import { TabContainer } from './bottom/tab_container';
 import { AddSchedulePopup } from './bottom/add_schedule_popup';
-
 
 interface HorizontalPanelsProps {
   topContent: React.ReactNode;
   bottomContent: React.ReactNode;
 }
 
-function HorizontalPanels({ topContent, bottomContent }: HorizontalPanelsProps) {
+function HorizontalPanels({
+  topContent,
+  bottomContent,
+}: HorizontalPanelsProps) {
   const [splitPosition, setSplitPosition] = useState(50); // percentage
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
 
   const handleMouseDown = useCallback(() => {
     isDragging.current = true;
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.body.style.cursor = 'row-resize';
-    document.body.style.userSelect = 'none';
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
   }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -40,19 +46,16 @@ function HorizontalPanels({ topContent, bottomContent }: HorizontalPanelsProps) 
 
   const handleMouseUp = useCallback(() => {
     isDragging.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
   }, [handleMouseMove]);
 
   return (
-    <div 
-      ref={containerRef}
-      className="w-full h-full relative flex flex-col"
-    >
+    <div ref={containerRef} className="w-full h-full relative flex flex-col">
       {/* Top Panel */}
-      <div 
+      <div
         className="bg-white border border-gray-300 rounded-lg overflow-auto"
         style={{ height: `${splitPosition}%` }}
       >
@@ -66,7 +69,7 @@ function HorizontalPanels({ topContent, bottomContent }: HorizontalPanelsProps) 
       />
 
       {/* Bottom Panel */}
-      <div 
+      <div
         className="bg-white border border-gray-300 rounded-lg overflow-auto flex-1"
         style={{ height: `${100 - splitPosition}%` }}
       >
@@ -88,10 +91,10 @@ function VerticalPanels({ leftContent, rightContent }: VerticalPanelsProps) {
 
   const handleMouseDown = useCallback(() => {
     isDragging.current = true;
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
   }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -106,22 +109,16 @@ function VerticalPanels({ leftContent, rightContent }: VerticalPanelsProps) {
 
   const handleMouseUp = useCallback(() => {
     isDragging.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
   }, [handleMouseMove]);
 
   return (
-    <div 
-      ref={containerRef}
-      className="w-full h-full relative flex"
-    >
+    <div ref={containerRef} className="w-full h-full relative flex">
       {/* Left Panel */}
-      <div 
-        className="h-full"
-        style={{ width: `${splitPosition}%` }}
-      >
+      <div className="h-full" style={{ width: `${splitPosition}%` }}>
         {leftContent}
       </div>
 
@@ -132,7 +129,7 @@ function VerticalPanels({ leftContent, rightContent }: VerticalPanelsProps) {
       />
 
       {/* Right Panel */}
-      <div 
+      <div
         className="h-full flex-1"
         style={{ width: `${100 - splitPosition}%` }}
       >
@@ -144,17 +141,24 @@ function VerticalPanels({ leftContent, rightContent }: VerticalPanelsProps) {
 
 // Main ResizablePanels component
 export function ResizablePanels() {
-  const [selectedOption, setSelectedOption] = useState('');
-  const [searchValue, setSearchValue] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
   const [isAddPopupOpen, setIsAddPopupOpen] = useState(false);
   const [isAddSchedulePopupOpen, setIsAddSchedulePopupOpen] = useState(false);
 
-  const handleDropdownChange = (value) => {
-    setSelectedOption(value);
-  };
+type Tab = {
+  id: string;
+  name: string;
+  data: TableConfig["data"][0];
+};
 
-  const handleDropdownDateChange = (value) => {
+type Props = {
+  token: string;
+};
+
+// Main ResizablePanels component
+export function ResizablePanels({ token }: Props) {
+  const [selectedDate, setSelectedDate] = useState("");
+
+  const handleDropdownDateChange = (value: string) => {
     setSelectedDate(value);
   };
 
@@ -193,63 +197,51 @@ export function ResizablePanels() {
     console.log('Saved data:', data);
     setIsAddPopupOpen(false);
   }
-  
-
-  const handleDelete = (selectedRowIndices) => {
-    console.log('Delete button clicked, selected rows:', selectedRowIndices);
-    // Implement delete logic here
+ 
+    console.log("Add Schedule button clicked from parent");
+    // Implement add schedule logic here
   };
 
-  const handleFilter = () => {
-    console.log('Filter button clicked from parent');
-    // Implement filter logic here
-  };
+  const [openTabs, setOpenTabs] = useState<Tab[]>([]);
+  const [activeTab, setActiveTab] = useState<string | undefined>();
 
-  const handleSearch = (value) => {
-    setSearchValue(value);
-  };
-
-  const [openTabs, setOpenTabs] = useState([]);
-  const [activeTab, setActiveTab] = useState(null);
-
-  const handleRowDoubleClick = (row) => {
+  const handleRowDoubleClick = (row: TableConfig["data"][0]) => {
     const tabId = `${row.id}-${row.date}`;
-    console.log('Row double-clicked:', row, 'Tab ID:', tabId);
-    console.log('Tab date:', row.date);
-    const temp = row.date
-    const temp3 = temp.slice(0, - 5)
-    const temp2 = temp.substring(0, row.date.length - 5)
+    console.log("Row double-clicked:", row, "Tab ID:", tabId);
+    console.log("Tab date:", row.date);
+    const temp = row.date;
+    const temp3 = temp.slice(0, -5);
+    const temp2 = temp.substring(0, row.date.length - 5);
     const tabName = `${row.id}-${temp2}`;
-    
-    
+
     // Check if tab is already open
-    const existingTab = openTabs.find(tab => tab.id === tabId);
-    
+    const existingTab = openTabs.find((tab) => tab.id === tabId);
     if (!existingTab) {
       // Add new tab
       const newTab = {
         id: tabId,
         name: tabName,
-        data: row
+        data: row,
       };
-      setOpenTabs(prev => [...prev, newTab]);
+      setOpenTabs((prev) => [...prev, newTab]);
       setActiveTab(tabId);
     } else {
       // Switch to existing tab
       setActiveTab(tabId);
     }
   };
-  const closeTab = (tabId) => {
-    setOpenTabs(prev => {
-      const newTabs = prev.filter(tab => tab.id !== tabId);
+  const closeTab = (tabId: string) => {
+    setOpenTabs((prev) => {
+      const newTabs = prev.filter((tab) => tab.id !== tabId);
       // If closing active tab, switch to another tab or none
       if (activeTab === tabId) {
-        setActiveTab(newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null);
+        setActiveTab(
+          newTabs.length > 0 ? newTabs[newTabs.length - 1].id : undefined
+        );
       }
       return newTabs;
     });
   };
-
 
   return (
     <div className="w-full h-full">
@@ -258,17 +250,8 @@ export function ResizablePanels() {
           <VerticalPanels
             leftContent={
               <div className="h-full">
-                <TopLeftBar 
-                  onDropdownChange={handleDropdownChange}
-                  onAdd={handleAdd}
-                  onDelete={handleDelete}
-                  onFilter={handleFilter}
-                  onSearch={handleSearch}
-                />
-                <DataTable 
-                  selectedOption={selectedOption}
-                  searchValue={searchValue}
-                />
+                <DataTable token={token} />
+                
                 <AddDataPopup
                   isOpen={isAddPopupOpen}
                   onClose={handleClosePopup}
@@ -276,7 +259,6 @@ export function ResizablePanels() {
                   selectedOption={selectedOption}
                 />
               </div>
-              
             }
             rightContent={
               <div className="h-full">
@@ -307,7 +289,7 @@ export function ResizablePanels() {
             }
             rightContent={
               <div className="h-full">
-                <TabContainer 
+                <TabContainer
                   tabs={openTabs}
                   activeTab={activeTab}
                   onTabChange={setActiveTab}

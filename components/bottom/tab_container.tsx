@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Trash } from "lucide-react";
-import { IconButton } from '@mui/material';
 import { AddAssignmentPopup } from './add_assignment_popup'; // Import the popup component
+import { Plus, Trash } from "lucide-react";
+import { IconButton } from "@mui/material";
 
 // Define the types for your tab data
 interface TabData {
@@ -21,7 +21,7 @@ interface Tab {
 
 interface TabContainerProps {
   tabs: Tab[];
-  activeTab: string | null;
+  activeTab: string | undefined;
   onTabChange: (tabId: string) => void;
   onTabClose: (tabId: string) => void;
 }
@@ -37,7 +37,7 @@ interface OrderData {
   truckId: number;
   tankId: number;
   compressorId: number;
-  status: 'completed' | 'in progress';
+  status: "completed" | "in progress";
   tasks: {
     name: string;
     estimated: string;
@@ -47,7 +47,7 @@ interface OrderData {
 
 const styleHover = {
   "&:hover": {
-    backgroundColor: "#bdc3c0"
+    backgroundColor: "#bdc3c0",
   },
   textTransform: "none",
   backgroundColor: "#e6ebe9",
@@ -61,31 +61,75 @@ const getOrdersForSchedule = (scheduleId: string): OrderData[] => {
       truckId: 3,
       tankId: 5,
       compressorId: 2,
-      status: 'completed',
+      status: "completed",
       tasks: [
-        { name: 'Start time at truck depot', estimated: '10:30', actual: '11:00' },
-        { name: 'Complete loading gas tank at tank depot', estimated: '10:45', actual: '11:15' },
-        { name: 'Complete filling gas tank at compressor station', estimated: '11:30', actual: '12:30' },
-        { name: 'Complete delivery to the customer', estimated: '13:00', actual: '13:50' },
-        { name: 'Complete unloading gas tank at compressor station', estimated: '15:00', actual: '15:15' },
-        { name: 'Returned to truck depot', estimated: '15:15', actual: '15:30' }
-      ]
+        {
+          name: "Start time at truck depot",
+          estimated: "10:30",
+          actual: "11:00",
+        },
+        {
+          name: "Complete loading gas tank at tank depot",
+          estimated: "10:45",
+          actual: "11:15",
+        },
+        {
+          name: "Complete filling gas tank at compressor station",
+          estimated: "11:30",
+          actual: "12:30",
+        },
+        {
+          name: "Complete delivery to the customer",
+          estimated: "13:00",
+          actual: "13:50",
+        },
+        {
+          name: "Complete unloading gas tank at compressor station",
+          estimated: "15:00",
+          actual: "15:15",
+        },
+        {
+          name: "Returned to truck depot",
+          estimated: "15:15",
+          actual: "15:30",
+        },
+      ],
     },
     {
       orderId: 16,
       truckId: 5,
       tankId: 2,
       compressorId: 1,
-      status: 'in progress',
+      status: "in progress",
       tasks: [
-        { name: 'Start time at truck depot', estimated: '16:00', actual: '15:45' },
-        { name: 'Complete loading gas tank at tank depot', estimated: '16:15', actual: null },
-        { name: 'Complete filling gas tank at compressor station', estimated: '16:45', actual: null },
-        { name: 'Complete delivery to the customer', estimated: '17:30', actual: null },
-        { name: 'Complete unloading gas tank at compressor station', estimated: '18:30', actual: null },
-        { name: 'Returned to truck depot', estimated: '19:00', actual: null }
-      ]
-    }
+        {
+          name: "Start time at truck depot",
+          estimated: "16:00",
+          actual: "15:45",
+        },
+        {
+          name: "Complete loading gas tank at tank depot",
+          estimated: "16:15",
+          actual: null,
+        },
+        {
+          name: "Complete filling gas tank at compressor station",
+          estimated: "16:45",
+          actual: null,
+        },
+        {
+          name: "Complete delivery to the customer",
+          estimated: "17:30",
+          actual: null,
+        },
+        {
+          name: "Complete unloading gas tank at compressor station",
+          estimated: "18:30",
+          actual: null,
+        },
+        { name: "Returned to truck depot", estimated: "19:00", actual: null },
+      ],
+    },
   ];
 };
 
@@ -132,20 +176,34 @@ function TabContent({ data, onAddAssignment }: TabContentProps) {
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-brand-F1EDEA fontweight-bold">
-              <th className="border border-gray-300 px-1 py-1 text-center">Order ID</th>
-              <th className="border border-gray-300 px-1 py-1 text-center">Truck ID</th>
-              <th className="border border-gray-300 px-1 py-1 text-center">Tank ID</th>
-              <th className="border border-gray-300 px-1 py-1 text-center">Compressor ID</th>
-              <th className="border border-gray-300 px-1 py-1 text-center">Status</th>
-              <th className="border border-gray-300 px-1 py-1 text-center">Estimated</th>
-              <th className="border border-gray-300 px-1 py-1 text-center">Actual</th>
+              <th className="border border-gray-300 px-1 py-1 text-center">
+                Order ID
+              </th>
+              <th className="border border-gray-300 px-1 py-1 text-center">
+                Truck ID
+              </th>
+              <th className="border border-gray-300 px-1 py-1 text-center">
+                Tank ID
+              </th>
+              <th className="border border-gray-300 px-1 py-1 text-center">
+                Compressor ID
+              </th>
+              <th className="border border-gray-300 px-1 py-1 text-center">
+                Status
+              </th>
+              <th className="border border-gray-300 px-1 py-1 text-center">
+                Estimated
+              </th>
+              <th className="border border-gray-300 px-1 py-1 text-center">
+                Actual
+              </th>
             </tr>
           </thead>
           <tbody>
             {orders.map((order, orderIndex) => (
               <React.Fragment key={order.orderId}>
                 {/* Order header row */}
-                <tr className="bg-brand-F1EDEA hover:bg-gray-50" >
+                <tr className="bg-brand-F1EDEA hover:bg-gray-50">
                   <td className="border border-gray-300 px-1 py-1 text-center font-sm">
                     {order.orderId}
                   </td>
@@ -159,21 +217,27 @@ function TabContent({ data, onAddAssignment }: TabContentProps) {
                     {order.compressorId}
                   </td>
                   <td className="border border-gray-300 px-1 py-1 text-center">
-                    <span className={`px-1 py-1 rounded text-sm font-sm ${
-                      order.status === 'completed' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
+
+                    <span
+                      className={`px-1 py-1 rounded text-sm font-sm ${
+                        order.status === "completed"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
                       {order.status}
                     </span>
                   </td>
                   <td className="border border-gray-300 px-1 py-1"></td>
                   <td className="border border-gray-300 px-1 py-1"></td>
                 </tr>
-                
+
                 {/* Task rows */}
                 {order.tasks.map((task, taskIndex) => (
-                  <tr key={`${order.orderId}-${taskIndex}`} className="hover:bg-gray-50">
+                  <tr
+                    key={`${order.orderId}-${taskIndex}`}
+                    className="hover:bg-gray-50"
+                  >
                     <td className="border border-gray-300 px-1 py-1"></td>
                     <td className="border border-gray-300 px-1 py-1"></td>
                     <td className="border border-gray-300 px-1 py-1"></td>
@@ -185,7 +249,7 @@ function TabContent({ data, onAddAssignment }: TabContentProps) {
                       {task.estimated}
                     </td>
                     <td className="border border-gray-300 px-1 py-1 text-center">
-                      {task.actual || '—'}
+                      {task.actual || "—"}
                     </td>
                   </tr>
                 ))}
@@ -194,7 +258,6 @@ function TabContent({ data, onAddAssignment }: TabContentProps) {
           </tbody>
         </table>
       </div>
-
       {/* Add Assignment Popup */}
       <AddAssignmentPopup 
         isOpen={isAddPopupOpen}
@@ -205,7 +268,12 @@ function TabContent({ data, onAddAssignment }: TabContentProps) {
   );
 }
 
-export function TabContainer({ tabs, activeTab, onTabChange, onTabClose }: TabContainerProps) {
+export function TabContainer({
+  tabs,
+  activeTab,
+  onTabChange,
+  onTabClose,
+}: TabContainerProps) {
   const handleAddAssignment = (assignmentData: any) => {
     // Handle the new assignment data here
     // This could involve updating your state, making API calls, etc.
@@ -213,13 +281,16 @@ export function TabContainer({ tabs, activeTab, onTabChange, onTabClose }: TabCo
     // You might want to pass this up to the parent component
     // or handle it directly here based on your data flow
   };
-
+  
   if (tabs.length === 0) {
     return (
       <div className="flex items-center justify-center h-full bg-brand-BDC3C0 rounded-lg border-2 border-dashed border-gray-300">
         <div className="text-center">
           <div className="text-gray-400 text-4xl mb-4">📋</div>
-          <p className="text-gray-500 text-lg font-medium">No schedules opened</p>
+
+          <p className="text-gray-500 text-lg font-medium">
+            No schedules opened
+          </p>
           <p className="text-gray-400 text-sm mt-2">
             Double-click a row in the table to open a schedule tab
           </p>
@@ -228,19 +299,19 @@ export function TabContainer({ tabs, activeTab, onTabChange, onTabClose }: TabCo
     );
   }
 
-  const activeTabData = tabs.find(tab => tab.id === activeTab);
+  const activeTabData = tabs.find((tab) => tab.id === activeTab);
 
   return (
     <div className="flex flex-col h-full bg-brand-BDC3C0 rounded-lg shadow-sm border border-gray-200">
       {/* Tab Bar */}
       <div className="flex border-b border-gray-200 bg-brand-BDC3C0 rounded-t-lg overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <div
             key={tab.id}
             className={`flex rounded-lg items-center px-1 py-1 border-r border-blank-200 cursor-pointer whitespace-nowrap min-w-0 ${
-              activeTab === tab.id 
-                ? 'bg-white border-b-2 fontweight-bold font-medium text-black' 
-                : 'hover:bg-gray-100 text-gray-600 opacity-80'
+              activeTab === tab.id
+                ? "bg-white border-b-2 fontweight-bold font-medium text-black"
+                : "hover:bg-gray-100 text-gray-600 opacity-80"
             }`}
             onClick={() => onTabChange(tab.id)}
           >
@@ -253,9 +324,9 @@ export function TabContainer({ tabs, activeTab, onTabChange, onTabClose }: TabCo
                 onTabClose(tab.id);
               }}
               className={`ml-1 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                activeTab === tab.id 
-                  ? 'hover:bg-gray-200 text-gray-500 hover:text-black' 
-                  : 'hover:bg-gray-200 text-gray-500'
+                activeTab === tab.id
+                  ? "hover:bg-gray-200 text-gray-500 hover:text-black"
+                  : "hover:bg-gray-200 text-gray-500"
               }`}
               title="Close tab"
             >
@@ -263,8 +334,7 @@ export function TabContainer({ tabs, activeTab, onTabChange, onTabClose }: TabCo
             </button>
           </div>
         ))}
-      </div>
-      
+      </div>      
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab && activeTabData && (
@@ -277,3 +347,4 @@ export function TabContainer({ tabs, activeTab, onTabChange, onTabClose }: TabCo
     </div>
   );
 }
+
