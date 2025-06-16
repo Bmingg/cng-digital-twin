@@ -196,12 +196,6 @@ export function DataTable({ token }: Props) {
             Please select an option from the dropdown
           </div>
         </div>
-        <AddDataPopup
-            isOpen={isAddPopupOpen}
-            onClose={handleClosePopup}
-            onSave={handleSaveData}
-            selectedOption={selectedOption}
-        />
       </>
     );
   }
@@ -222,6 +216,12 @@ export function DataTable({ token }: Props) {
             No table configuration available for: {selectedOption}
           </div>
         </div>
+        <AddDataPopup
+            isOpen={isAddPopupOpen}
+            onClose={handleClosePopup}
+            onSave={handleSaveData}
+            selectedOption={selectedOption}
+        />
       </>
     );
   }
@@ -236,6 +236,12 @@ export function DataTable({ token }: Props) {
         onSearch={handleSearch}
         searchValue={searchValue}
       />
+      <AddDataPopup
+            isOpen={isAddPopupOpen}
+            onClose={handleClosePopup}
+            onSave={handleSaveData}
+            selectedOption={selectedOption}
+        />
       <div className="flex flex-col h-full w-full">
         <div className="flex-1 overflow-auto bg-brand-F1EDEA rounded-lg shadow">
           <table className="min-w-full divide-y divide-brand-F1EDEA">

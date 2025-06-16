@@ -5,7 +5,6 @@ import { DataTable } from "./topleft/data_table";
 import { BottomLeftBar } from "./bottom/bottom_left_bar";
 import { ScheduleTable, TableConfig } from "./bottom/schedule_table";
 import { TabContainer } from "./bottom/tab_container";
-
 import { AddSchedulePopup } from './bottom/add_schedule_popup';
 
 interface HorizontalPanelsProps {
