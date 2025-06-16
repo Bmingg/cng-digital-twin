@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 
 import { LockOutlined } from "@mui/icons-material";
 import {
@@ -11,16 +10,37 @@ import {
   TextField,
   Button,
   Grid,
+  Snackbar,
 } from "@mui/material";
 import { useState } from "react";
-import Link from 'next/link';
-import { Link as MuiLink } from '@mui/material';
+import Link from "next/link";
+import { Link as MuiLink } from "@mui/material";
+import { httpPost$Login } from "@/lib/commands/Login/fetcher";
+import { CLIENT_ENV } from "@/lib/env";
+import { setCookie } from "cookies-next/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [open, setOpen] = useState(false);
 
-  const handleLogin = () => {};
+  const handleLogin = async () => {
+    try {
+      const { access_token } = await httpPost$Login(
+        `${CLIENT_ENV.BACKEND_URL}/api/users/auth/login`,
+        {
+          username: email,
+          password,
+          grant_type: "password",
+        }
+      );
+      setCookie("token", access_token);
+      setOpen(true);
+    } catch (error) {
+      console.error(error);
+      alert("An error has happened. Please try again!");
+    }
+  };
 
   return (
     <>
@@ -38,6 +58,12 @@ const Login = () => {
             <LockOutlined />
           </Avatar>
           <Typography variant="h5">Login</Typography>
+          <Snackbar
+            open={open}
+            autoHideDuration={5000}
+            onClose={() => setOpen(false)}
+            message="Login successfully!"
+          />
           <Box sx={{ mt: 1 }}>
             <TextField
               margin="normal"
