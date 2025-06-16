@@ -2,10 +2,8 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import { DataTable } from "./topleft/data_table";
-import { BottomLeftBar } from "./bottom/bottom_left_bar";
 import { ScheduleTable, TableConfig } from "./bottom/schedule_table";
 import { TabContainer } from "./bottom/tab_container";
-import { AddSchedulePopup } from './bottom/add_schedule_popup';
 
 interface HorizontalPanelsProps {
   topContent: React.ReactNode;
@@ -146,25 +144,6 @@ type Props = {
 // Main ResizablePanels component
 export function ResizablePanels({ token }: Props) {
 
-  const [selectedDate, setSelectedDate] = useState("");
-  const [isAddSchedulePopupOpen, setIsAddSchedulePopupOpen] = useState(false);
-  
-  const handleDropdownDateChange = (value: string) => {
-    setSelectedDate(value);
-  };
-  const handleAddSchedule = () => {
-    setIsAddSchedulePopupOpen(true);
-  };
-  const handleCloseSchedule = () => {
-    setIsAddSchedulePopupOpen(false);
-  };
-  const handleSaveSchedule = (ScheduleData) => {
-    // Save the ScheduleData from the popup add in bottom-left schedule table
-    // Don't know how to do this yet, just logging for now
-    console.log('Saved data:', ScheduleData);
-    setIsAddSchedulePopupOpen(false);
-  }
-
   const [openTabs, setOpenTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState<string | undefined>();
 
@@ -229,19 +208,9 @@ export function ResizablePanels({ token }: Props) {
           <VerticalPanels
             leftContent={
               <div className="h-full">
-                <BottomLeftBar
-                  onDropdownDateChange={handleDropdownDateChange}
-                  onAddSchedule={handleAddSchedule}
-                />
                 <ScheduleTable
-                  selectedDate={selectedDate}
                   onRowDoubleClick={handleRowDoubleClick}
-                />
-                <AddSchedulePopup
-                  isOpen={isAddSchedulePopupOpen}
-                  onClose={handleCloseSchedule}
-                  onSave={handleSaveSchedule}
-                  selectedDate={selectedDate}
+                  token={token}
                 />
               </div>
             }

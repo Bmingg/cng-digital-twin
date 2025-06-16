@@ -1,12 +1,19 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 
-const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption }) => {
+const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption }: any) => {
   const [formData, setFormData] = useState({});
 
   // Different attribute sets based on selectedOption from the dropdown list in TopLeftBar
   const attributeSets = {
     truckTypes: ['ID', 'Count', 'Vmax', 'Ownership', 'Rental cost per hour'],
+    trucks: ['ID', 'Truck Type ID', 'Status', 'Station ID'],
+    gasTankTypes: ['ID', 'Count', 'Vmax', 'Ownership', 'Rental cost per hour', 'Loading time'],
+    gasTanks: ['ID', 'Gas Tank Type ID', 'Status', 'Station ID'],
+    compressorTypes: ['ID', 'Capacity', 'Capacity (m3)', 'Count'],
+    compressors: ['ID', 'Compressor Type ID', 'Status', 'Station ID'],
+    compressionStations: ['ID', 'Address', 'Number of Compressors', 'Latitude', 'Longitude'],
+    customers: ['Name', 'Address', 'Contact info', 'ID', 'Longtitude', 'Latitude'],
     orders: ['ID', 'Customer ID', 'Delivery Time', 'Priority Level', 'Status'],
     // Add more attribute sets as needed
   };

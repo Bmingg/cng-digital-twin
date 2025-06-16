@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 
-const AddSchedulePopup = ({ isOpen, onClose, onSave }) => {
+const AddSchedulePopup = ({ isOpen, onClose, onSave }: any) => {
   const [formData, setFormData] = useState({});
 
   // Fixed attribute set for schedule window
