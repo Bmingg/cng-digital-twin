@@ -60,7 +60,7 @@ export function DataTable({ token }: Props) {
 
   const getTableConfig = (option: string) => {
     switch (option) {
-      case "Truck types":
+      case "truckTypes":
         return {
           columns: [
             { key: "id", label: "ID" },
@@ -72,7 +72,7 @@ export function DataTable({ token }: Props) {
           data: swr.GetResourcesTructTypes.data ?? [],
         };
 
-      case "Orders":
+      case "orders":
         return {
           columns: [
             { key: "id", label: "ID" },

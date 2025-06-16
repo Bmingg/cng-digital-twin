@@ -9,6 +9,9 @@ import { TabContainer } from "./bottom/tab_container";
 import useSWR from "swr";
 import { httpGet$GetResourcesTruckTypes } from "@/lib/commands/GetResourcesTruckTypes/fetcher";
 import { CLIENT_ENV } from "@/lib/env";
+        
+import { AddDataPopup } from './topleft/add_popup';
+import { AddSchedulePopup } from './bottom/add_schedule_popup';
 
 interface HorizontalPanelsProps {
   topContent: React.ReactNode;
@@ -136,6 +139,11 @@ function VerticalPanels({ leftContent, rightContent }: VerticalPanelsProps) {
   );
 }
 
+// Main ResizablePanels component
+export function ResizablePanels() {
+  const [isAddPopupOpen, setIsAddPopupOpen] = useState(false);
+  const [isAddSchedulePopupOpen, setIsAddSchedulePopupOpen] = useState(false);
+
 type Tab = {
   id: string;
   name: string;
@@ -155,6 +163,41 @@ export function ResizablePanels({ token }: Props) {
   };
 
   const handleAddSchedule = () => {
+    setIsAddSchedulePopupOpen(true);
+  };
+
+  const handleCloseSchedule = () => {
+    setIsAddSchedulePopupOpen(false);
+  };
+
+  const handleSaveSchedule = (ScheduleData) => {
+    // Save the ScheduleData from the popup add in bottom-left schedule table
+    // Don't know how to do this yet, just logging for now
+    console.log('Saved data:', ScheduleData);
+    setIsAddSchedulePopupOpen(false);
+  }
+
+
+  const handleAdd = () => {
+    console.log('Add button clicked from parent');
+    // Implement add logic here
+    console.log('selectedOption:', selectedOption);
+    console.log('isAddPopupOpen before:', isAddPopupOpen);
+    setIsAddPopupOpen(true);
+    console.log('isAddPopupOpen after:', true);
+  };
+
+  const handleClosePopup = () => {
+    setIsAddPopupOpen(false);
+  };
+
+  const handleSaveData = (data) => {
+    // Save the data from the popup add in top-left data table
+    // Don't know how to do this yet, just logging for now
+    console.log('Saved data:', data);
+    setIsAddPopupOpen(false);
+  }
+ 
     console.log("Add Schedule button clicked from parent");
     // Implement add schedule logic here
   };
@@ -173,7 +216,6 @@ export function ResizablePanels({ token }: Props) {
 
     // Check if tab is already open
     const existingTab = openTabs.find((tab) => tab.id === tabId);
-
     if (!existingTab) {
       // Add new tab
       const newTab = {
@@ -209,6 +251,13 @@ export function ResizablePanels({ token }: Props) {
             leftContent={
               <div className="h-full">
                 <DataTable token={token} />
+                
+                <AddDataPopup
+                  isOpen={isAddPopupOpen}
+                  onClose={handleClosePopup}
+                  onSave={handleSaveData}
+                  selectedOption={selectedOption}
+                />
               </div>
             }
             rightContent={
@@ -229,6 +278,12 @@ export function ResizablePanels({ token }: Props) {
                 <ScheduleTable
                   selectedDate={selectedDate}
                   onRowDoubleClick={handleRowDoubleClick}
+                />
+                <AddSchedulePopup
+                  isOpen={isAddSchedulePopupOpen}
+                  onClose={handleCloseSchedule}
+                  onSave={handleSaveSchedule}
+                  selectedDate={selectedDate}
                 />
               </div>
             }
