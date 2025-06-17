@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useState } from "react";
-import { Search, Filter, Plus, Trash, MoveHorizontal } from "lucide-react";
+import { Search, Filter, Plus, Trash, Pencil } from "lucide-react";
 
 const styleHover = {
   "&:hover": {
@@ -28,6 +28,7 @@ export function TopLeftBar({
   onDropdownChange,
   onAdd,
   onDelete,
+  onEdit,
   onFilter,
   onSearch,
   searchValue,
@@ -135,6 +136,13 @@ export function TopLeftBar({
           sx={styleHover}
         >
           <Trash className="h-4 w-4" color="#003b2a" />
+        </IconButton>
+        <IconButton
+          onClick={onEdit}
+          className="flex items-center gap-1"
+          sx={styleHover}
+        >
+          <Pencil className="h-4 w-4" color="#003b2a" />
         </IconButton>
       </div>
       <div className="flex items-center gap-2"></div>

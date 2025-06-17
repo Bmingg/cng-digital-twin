@@ -10,7 +10,7 @@ export type GetResourcesTrucks$Params = z.infer<
 
 export const GetResourcesTrucks$Result = z
   .object({
-    id: z.string(),
+    id: z.number(),
     truck_type_id: z.string(),
     status: z.string(),
     station_id: z.string(),
@@ -30,7 +30,7 @@ export const GetResourcesTrucks$Result = z
         latitude: z.number(),
         longitude: z.number(),
       }),
-    }),
+    }).optional(),
   })
   .array();
 export type GetResourcesTrucks$Result = z.infer<
