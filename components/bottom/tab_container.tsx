@@ -6,6 +6,8 @@ import useSWR from "swr";
 import { httpGet$GetPlanAssignments } from "@/lib/commands/GetPlanAssignments/fetcher";
 import { CLIENT_ENV } from "@/lib/env";
 import { UpdateTimePopup } from "./update_time_popup";
+import { AddAssignmentToPlan$Params } from "@/lib/commands/AddAssignmentToPlan/typing";
+import { httpPost$AddAssignmentToPlan } from "@/lib/commands/AddAssignmentToPlan/fetcher";
 
 // Define the types for your tab data
 interface TabData {
@@ -35,20 +37,6 @@ interface TabContentProps {
   data: TabData | undefined;
   onAddAssignment: (assignmentData: any) => void;
   token: string;
-}
-
-// Sample data structure for the table - replace with your actual data structure
-interface OrderData {
-  orderId: number;
-  truckId: number;
-  tankId: number;
-  compressorId: number;
-  status: "completed" | "in progress";
-  tasks: {
-    name: string;
-    estimated: string;
-    actual: string | null;
-  }[];
 }
 
 const styleHover = {
@@ -96,10 +84,21 @@ function TabContent({ data, onAddAssignment, token }: TabContentProps) {
     setIsAddPopupOpen(false);
   };
 
-  const handlePopupSave = (assignmentData: any) => {
-    console.log("New assignment data:", assignmentData);
-    onAddAssignment(assignmentData);
-    setIsAddPopupOpen(false);
+  const handlePopupSave = async (params: AddAssignmentToPlan$Params) => {
+    try {
+      await httpPost$AddAssignmentToPlan(
+        `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans/${data.id}/assignments`,
+        params
+      );
+      alert("Add assignment successfully!");
+      swr.GetPlanAssignments.mutate();
+      setIsAddPopupOpen(false);
+    } catch (error) {
+      console.error(error);
+      if ("message" in (error as any)) {
+        alert((error as any).message);
+      }
+    }
   };
 
   const handleUpdateTime = async (time: string) => {
@@ -329,6 +328,7 @@ function TabContent({ data, onAddAssignment, token }: TabContentProps) {
       </div>
       {/* Add Assignment Popup */}
       <AddAssignmentPopup
+        date={data.date}
         isOpen={isAddPopupOpen}
         onClose={handlePopupClose}
         onSave={handlePopupSave}

@@ -62,14 +62,6 @@ export function ScheduleTable({ onRowDoubleClick, token }: Props) {
     setIsAddSchedulePopupOpen(true);
   };
 
-  const handleDeleteSchedule = async () => {
-    if (!selectedRow) return;
-    await httpDelete$DeleteResources(
-      `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans`,
-      { id: selectedRow }
-    );
-  };
-
   const handleCloseSchedule = () => {
     setIsAddSchedulePopupOpen(false);
   };
@@ -90,6 +82,17 @@ export function ScheduleTable({ onRowDoubleClick, token }: Props) {
     ),
   };
 
+  const handleDeleteSchedule = async () => {
+    if (!selectedRow) return;
+    await httpDelete$DeleteResources(
+      `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans`,
+      { id: selectedRow },
+      token
+    );
+    alert("Dispatch plan deleted successfully!");
+    swr.GetDispatchPlans.mutate();
+  };
+
   const handleSaveSchedule = async (params: CreateDispatchPlan$Params) => {
     // Save the ScheduleData from the popup add in bottom-left schedule table
     // Don't know how to do this yet, just logging for now
@@ -107,6 +110,8 @@ export function ScheduleTable({ onRowDoubleClick, token }: Props) {
       { key: "id", label: "ID" },
       { key: "status", label: "Status" },
       { key: "cngVolumeDelivered", label: "CNG volume delivered" },
+      { key: "totalDistance", label: "Total Distance" },
+      { key: "totalOrderCompleted", label: "Total Order Completed" },
       { key: "totalCost", label: "Total cost" },
     ],
     data:
@@ -114,6 +119,8 @@ export function ScheduleTable({ onRowDoubleClick, token }: Props) {
         id: plan.id,
         status: plan.status,
         cngVolumeDelivered: plan.total_volume_delivered,
+        totalDistance: plan.total_distance,
+        totalOrderCompleted: plan.total_order_completed,
         totalCost: plan.total_cost,
         date: plan.date,
       })) ?? [],

@@ -1,13 +1,15 @@
 "use client";
+import { AddAssignmentToPlan$Params } from "@/lib/commands/AddAssignmentToPlan/typing";
 import React, { useState, useEffect } from "react";
 
 type Props = {
+  date: string;
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (params: AddAssignmentToPlan$Params) => Promise<void>;
 };
 
-const AddAssignmentPopup = ({ isOpen, onClose, onSave }: Props) => {
+const AddAssignmentPopup = ({ date, isOpen, onClose, onSave }: Props) => {
   const [formData, setFormData] = useState<Record<string, string | number>>({});
 
   // Fixed attribute set for assignment window
@@ -41,12 +43,33 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }: Props) => {
     }));
   };
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave();
+  const handleSave = async () => {
+    const newDate = new Date(date);
+    const time: string = formData["estimated"].toString();
+    if (time.length !== 5) {
+      alert("invalid input time");
+      return;
     }
-    // Reset form
-    setFormData({});
+    let [hours, minutes] = time.split(":").map(Number);
+    newDate.setUTCHours(hours, minutes, 0);
+    const params = {
+      order_id: formData["orderid"].toString(),
+      truck_id:
+        typeof formData["truckid"] === "string"
+          ? parseInt(formData["truckid"])
+          : formData["truckid"],
+      tank_id:
+        typeof formData["tankid"] === "string"
+          ? parseInt(formData["tankid"])
+          : formData["tankid"],
+      compressor_id:
+        typeof formData["compressorid"] === "string"
+          ? parseInt(formData["compressorid"])
+          : formData["compressorid"],
+      estimated_start_time: newDate.toISOString(),
+    };
+    await onSave(params);
+    // setFormData({});
   };
 
   const handleCancel = () => {

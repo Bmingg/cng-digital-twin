@@ -1,7 +1,12 @@
+import { z } from "zod";
 import {
   AddAssignmentToPlan$Params,
   AddAssignmentToPlan$Result,
 } from "./typing";
+
+const ErrorMessage = z.object({
+  detail: z.string(),
+});
 
 export async function httpPost(
   url: string,
@@ -16,7 +21,14 @@ export async function httpPost(
     body: JSON.stringify(params),
   });
   if (!response.ok) {
-    throw new Error("response not ok");
+    const text = await response.text();
+    const data = JSON.parse(text);
+    const result = ErrorMessage.safeParse(data);
+    if (result.success) {
+      throw new Error(result.data.detail);
+    } else {
+      throw new Error("response not ok");
+    }
   }
   const text = await response.text();
   const data = JSON.parse(text);
