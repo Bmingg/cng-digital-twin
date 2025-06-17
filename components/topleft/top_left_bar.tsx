@@ -1,5 +1,6 @@
 "use client";
 import { Select, MenuItem, Box, IconButton, FormControl } from "@mui/material";
+
 import { useState } from "react";
 import { Search, Filter, Plus, Trash, Pencil } from "lucide-react";
 
@@ -73,6 +74,7 @@ export function TopLeftBar({
               </MenuItem>
               <MenuItem value="customers">Customers</MenuItem>
               <MenuItem value="orders">Orders</MenuItem>
+              <MenuItem value="stations">Stations</MenuItem>
               {/* Add more options as needed */}
             </Select>
           </FormControl>
