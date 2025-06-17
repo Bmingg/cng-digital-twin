@@ -17,6 +17,7 @@ import useSWR from "swr";
 import { TopLeftBar } from "./top_left_bar";
 import { httpDelete$DeleteResources } from "@/lib/commands/DeleteResources/fetcher";
 import { AddDataPopup } from './add_popup';
+import { EditDataPopup } from './edit_popup';
 import { httpPost$CreateTruckTypes } from "@/lib/commands/CreateTruckTypes/fetcher";
 import { httpPost$CreateOrders } from "@/lib/commands/CreateOrders/fetcher";
 import { httpPost$CreateGasTankTypes } from "@/lib/commands/CreateGasTankTypes/fetcher";
@@ -28,6 +29,16 @@ import { httpPost$CreateCompressionStations } from "@/lib/commands/CreateCompres
 import { httpPost$CreateCustomers } from "@/lib/commands/CreateCustomers/fetcher";
 import { httpPost$CreateStations } from "@/lib/commands/CreateStations/fetcher";
 import { httpGet$GetResourcesStations } from "@/lib/commands/GetResourcesStations/fetcher";
+import { httpPut$UpdateTruckTypes } from "@/lib/commands/UpdateTruckTypes/fetcher";
+import { httpPut$UpdateOrders } from "@/lib/commands/UpdateOrders/fetcher";
+import { httpPut$UpdateGasTankTypes } from "@/lib/commands/UpdateGasTankTypes/fetcher";
+import { httpPut$UpdateGasTanks } from "@/lib/commands/UpdateGasTanks/fetcher";
+import { httpPut$UpdateTrucks } from "@/lib/commands/UpdateTrucks/fetcher";
+import { httpPut$UpdateCompressorTypes } from "@/lib/commands/UpdateCompressorTypes/fetcher";
+import { httpPut$UpdateCompressors } from "@/lib/commands/UpdateCompressors/fetcher";
+import { httpPut$UpdateCompressionStations } from "@/lib/commands/UpdateCompressionStations/fetcher";
+import { httpPut$UpdateCustomers } from "@/lib/commands/UpdateCustomers/fetcher";
+import { httpPut$UpdateStations } from "@/lib/commands/UpdateStations/fetcher";
 
 type Props = {
   token: string;
@@ -38,12 +49,155 @@ export function DataTable({ token }: Props) {
   const [searchValue, setSearchValue] = React.useState("");
   const [selectedRow, setSelectedRow] = React.useState<string | undefined>();
   const [isAddPopupOpen, setIsAddPopupOpen] = React.useState(false);
+  const [isEditPopupOpen, setIsEditPopupOpen] = React.useState(false);
   
+  const handleSaveEdit = (data: any) => {
+
+    if (!selectedRow) return;
+    console.log('Edited data:', data);
+    if (selectedOption === "truckTypes") {
+      httpPut$UpdateTruckTypes(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types`,
+        data,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesTruckTypes.mutate(); // Refresh the truck types data
+      };
+    if (selectedOption === "orders") {
+      // Handle saving orders
+      httpPut$UpdateOrders(
+        `${CLIENT_ENV.BACKEND_URL}/api/orders`,
+        data,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesAllOrders.mutate(); // Refresh the orders data
+    }
+    if (selectedOption === "gasTankTypes") {
+      // Handle saving gas tank types
+      httpPut$UpdateGasTankTypes(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types`,
+        data,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesGasTankTypes.mutate(); // Refresh the gas tank types data
+    }
+    if (selectedOption === "gasTanks") {
+      // Handle saving gas tanks
+      httpPut$UpdateGasTanks(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks`,
+        data,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesGasTanks.mutate(); // Refresh the gas tanks data
+    }
+    if (selectedOption === "trucks") {
+      // Handle saving trucks
+      httpPut$UpdateTrucks(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks`,
+        data,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesTrucks.mutate(); // Refresh the trucks data
+    }
+    if (selectedOption === "compressorTypes") {
+      httpPut$UpdateCompressorTypes(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types`,
+        data,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesCompressorTypes.mutate(); // Refresh the compressor types data
+    }
+    if (selectedOption === "compressors") {
+      // Handle saving compressors
+      httpPut$UpdateCompressors(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors`,
+        data,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesCompressors.mutate(); // Refresh the compressors data
+    }
+    if (selectedOption === "compressionStations") {
+      // Handle saving compressor stations
+      const transformDataFormat = (data: any) => {
+        const { latitude, longitude, ...rest } = data;
+        return {
+          ...rest,
+          gps_coordinates: {
+            latitude,
+            longitude
+          }
+        };
+      };
+      const transformedData = transformDataFormat(data);
+
+      httpPut$UpdateCompressionStations(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/compression-stations`,
+        transformedData,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesCompressionStations.mutate(); // Refresh the compression stations data
+    }
+    if (selectedOption === "customers") {
+      // Handle saving customers
+      const transformDataFormat = (data: any) => {
+        const { latitude, longitude, ...rest } = data;
+        return {
+          ...rest,
+          gps_coordinates: {
+            latitude,
+            longitude
+          }
+        };
+      };
+      const transformedData = transformDataFormat(data);
+      httpPut$UpdateCustomers(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/customers`,
+        transformedData,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesCustomers.mutate(); // Refresh the customers data
+    }
+    if (selectedOption === "stations") {
+      // Handle saving stations
+      const transformDataFormat = (data: any) => {
+        const { latitude, longitude, ...rest } = data;
+        return {
+          ...rest,
+          gps_coordinates: {
+            latitude,
+            longitude
+          }
+        };
+      };
+      const transformedData = transformDataFormat(data);
+
+      httpPut$UpdateStations(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/stations`,
+        transformedData,
+        token
+      )
+      setIsEditPopupOpen(false);
+      swr.GetResourcesStations.mutate(); // Refresh the stations data
+    }
+  }
+
   const handleEdit = () => {
     if (!selectedRow) return;
-    console.log('Edit row:', selectedRow);
-    // Implement edit functionality here
+    setIsEditPopupOpen(true);
   }
+
+  const handleCloseEditPopup = () => {
+    setIsEditPopupOpen(false);
+  };
 
   const handleAdd = () => {
     if (!selectedOption) return;
@@ -573,6 +727,8 @@ export function DataTable({ token }: Props) {
       //   return getStatusBadge(value);
       case "rental_cost_by_hour":
         return value.toLocaleString()
+      case "required_volume":
+        return parseFloat(value).toFixed(2);
       // Round longitude and latitude to 6 decimal places
       case "longitude":
         return parseFloat(value).toFixed(5);
@@ -628,6 +784,14 @@ export function DataTable({ token }: Props) {
             selectedOption={selectedOption}
             token={token}
         />
+        <EditDataPopup
+            isOpen={isEditPopupOpen}
+            onClose={handleCloseEditPopup}
+            onSave={handleSaveEdit}
+            selectedOption={selectedOption}
+            token={token}
+            selectedRow={selectedRow}
+        />
       </>
     );
   }
@@ -649,7 +813,15 @@ export function DataTable({ token }: Props) {
             onSave={handleSaveData}
             selectedOption={selectedOption}
             token={token}
-        />
+      />
+      <EditDataPopup
+            isOpen={isEditPopupOpen}
+            onClose={handleCloseEditPopup}
+            onSave={handleSaveEdit}
+            selectedOption={selectedOption}
+            token={token}
+            selectedRow={selectedRow}
+      />
       <div className="flex flex-col h-full w-full">
         <div className="flex-1 overflow-auto bg-brand-F1EDEA rounded-lg shadow">
           <table className="min-w-full divide-y divide-brand-F1EDEA">

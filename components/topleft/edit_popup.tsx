@@ -15,7 +15,7 @@ import useSWR from "swr";
 import { httpGet$GetResourcesStations } from '@/lib/commands/GetResourcesStations/fetcher';
 
 
-const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) => {
+const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selectedRow }: any) => {
   const [formData, setFormData] = useState({});
 
   const swr = {
@@ -147,7 +147,6 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
     ],
     trucks: [
       { key: "id", label: "ID" },
-      { key: "truck_type_id", label: "Truck Type ID" },
       { key: "status", label: "Status" },
       { key: "station_id", label: "Station ID" },
     ],
@@ -161,7 +160,6 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
     ],
     gasTanks: [
       { key: "id", label: "ID" },
-      { key: "gas_tank_type_id", label: "Gas Tank Type ID" },
       { key: "status", label: "Status" }, 
       { key: "station_id", label: "Station ID" },
     ],
@@ -173,7 +171,6 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
     ],
     compressors: [
       { key: "id", label: "ID" },
-      { key: "compressor_type_id", label: "Compressor Type ID" },
       { key: "status", label: "Status" },
       { key: "compressor_station_id", label: "Compressor Station ID" },
     ],
@@ -193,10 +190,11 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
       { key: "latitude", label: "Latitude" },
     ],
     orders: [
-      { key: "customer_id", label: "Customer ID" },
+      { key: "id", label: "ID" },
       { key: "required_volume", label: "Required Volume" },
       { key: "delivery_time", label: "Delivery Time" },
       { key: "priority_level", label: "Priority Level" },
+      { key: "status", label: "Status" },
     ],
     stations: [
       { key: "id", label: "ID" },
@@ -213,19 +211,56 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
 
   // Reset form data when selectedOption changes or popup opens
   useEffect(() => {
-    if (isOpen) {
-      const initialFormData = {};
-      currentAttributes.forEach(attribute => {
-        // Use the key directly from the attribute object
-        initialFormData[attribute.key] = '';
-      });
-      setFormData(initialFormData);
+  //   if (isOpen) {
+  //     const initialFormData = {};
+  //     currentAttributes.forEach(attribute => {
+  //       // Use the key directly from the attribute object
+  //       initialFormData[attribute.key] = '';
+  //     });
+  //     setFormData(initialFormData);
+  //   }
+  // }, [isOpen, selectedOption, currentAttributes]);
+    if (selectedRow && swr) {
+      // Find the complete row data based on the selectedRow ID
+      let rowData = null;
+      
+      if (selectedOption === "orders") {
+        rowData = swr.GetResourcesAllOrders?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "customers") {
+        rowData = swr.GetResourcesCustomers?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "gasTanks") {
+        rowData = swr.GetResourcesGasTanks?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "trucks") {
+        rowData = swr.GetResourcesTrucks?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "compressors") {
+        rowData = swr.GetResourcesCompressors?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "compressionStations") {
+        rowData = swr.GetResourcesCompressionStations?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "gasTankTypes") {
+        rowData = swr.GetResourcesGasTankTypes?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "truckTypes") {
+        rowData = swr.GetResourcesTruckTypes?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "compressorTypes") {
+        rowData = swr.GetResourcesCompressorTypes?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "stations") {
+        rowData = swr.GetResourcesStations?.data?.find(item => item.id === selectedRow);
+      }
+      // If rowData is found, set the formData with the existing values
+      // This assumes that the rowData has the same keys as the attributes
+      // Add other resource types as needed
+      
+      if (rowData) {
+        setFormData(rowData);
+      }
     }
-  }, [isOpen, selectedOption, currentAttributes]);
+  }, [selectedRow, selectedOption, swr]);
+  
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
+      // Use the key directly from the attribute object
+      ["id"]: selectedRow,
       [field]: value
     }));
   };
@@ -291,15 +326,13 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
                 let placeholder = `Enter ${attribute.label.toLowerCase()}`;
                 let isDropdown = false;
                 let dropdownOptions: any[] = [];
+                let isReadonly = false;
 
-                if (fieldKey === "id" && selectedOption === 'customers') {
-                  // Special case for ID, render a text input
-                  inputType = 'number';
-                };
-                if (fieldKey === "id" && selectedOption === 'compressors' || selectedOption === 'trucks' || selectedOption === 'gasTanks' ) {
-                  // Special case for ID, render a text input
-                  inputType = 'number';
-                };
+                if (fieldKey === "id") {
+                  placeholder = selectedRow;
+                  isReadonly = true;
+                }
+
                 if (fieldKey === "loading_time") {
                   // Special case for loading_time, render a number input 
                   inputType = 'number';
@@ -402,14 +435,13 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
                   placeholder = 'Select Compressor Station';
                 };
 
-
-
                 return (
                   <div key={index} className="h-12">
                     {isDropdown ? (
                       <select
                         value={formData[fieldKey] || ''}
                         onChange={(e) => handleInputChange(fieldKey, e.target.value)}
+                        disabled={isReadonly}
                         className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
                           ${isFirst ? 'border-t border-l border-r rounded-tr-lg' : 'border-r'}
                           ${isLast ? 'border-b rounded-br-lg border-t-0' : ''}
@@ -425,12 +457,14 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
                     <input
                       type={inputType}
                       placeholder={placeholder}
+                      readOnly={isReadonly}
                       value={formData[fieldKey] || ''}
                       onChange={(e) => handleInputChange(fieldKey, e.target.value)}
                       className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
                         ${isFirst ? 'border-t border-l border-r rounded-tr-lg' : 'border-r'}
                         ${isLast ? 'border-b rounded-br-lg border-t-0' : ''}
                         ${!isFirst && !isLast ? 'border-t-0' : ''}
+                        ${isReadonly ? 'bg-gray-50 font-bold cursor-not-allowed' : ''}
                       `}
                     />
                       )}
@@ -461,4 +495,4 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
   );
 };
 
-export { AddDataPopup };
+export { EditDataPopup };
