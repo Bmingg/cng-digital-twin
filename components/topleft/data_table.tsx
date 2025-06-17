@@ -357,6 +357,40 @@ export function DataTable({ token }: Props) {
     setSearchValue(value);
   };
 
+  const handleRefresh = () => {
+    switch (selectedOption) {
+      case "truckTypes":
+        swr.GetResourcesTruckTypes.mutate();
+        break;
+      case "orders":
+        swr.GetResourcesAllOrders.mutate();
+        break;
+      case "gasTankTypes":
+        swr.GetResourcesGasTankTypes.mutate();
+        break;
+      case "gasTanks":
+        swr.GetResourcesGasTanks.mutate();
+        break;
+      case "trucks":
+        swr.GetResourcesTrucks.mutate();
+        break;
+      case "compressorTypes":
+        swr.GetResourcesCompressorTypes.mutate();
+        break;
+      case "compressors":
+        swr.GetResourcesCompressors.mutate();
+        break;
+      case "compressionStations":
+        swr.GetResourcesCompressionStations.mutate();
+        break;
+      case "customers":
+        swr.GetResourcesCustomers.mutate();
+        break;
+      default:
+        break;
+    }
+  };
+
   const getTableConfig = (option: string) => {
     switch (option) {
       case "truckTypes":
@@ -529,7 +563,7 @@ export function DataTable({ token }: Props) {
 
   if (!selectedOption) {
     return (
-      <>
+      <div className="flex flex-col h-full">
         <TopLeftBar
           onDropdownChange={handleDropdownChange}
           onAdd={handleAdd}
@@ -537,20 +571,21 @@ export function DataTable({ token }: Props) {
           onEdit={handleEdit}
           onFilter={handleFilter}
           onSearch={handleSearch}
+          onRefresh={handleRefresh}
           searchValue={searchValue}
         />
-        <div className="flex flex-col h-full w-full bg-gray-100 items-center justify-center">
+        <div className="flex-1 min-h-0 flex items-center justify-center bg-gray-100">
           <div className="text-gray-500 text-lg">
             Please select an option from the dropdown
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (tableConfig.columns.length === 0) {
     return (
-      <>
+      <div className="flex flex-col h-full">
         <TopLeftBar
           onDropdownChange={handleDropdownChange}
           onAdd={handleAdd}
@@ -558,25 +593,26 @@ export function DataTable({ token }: Props) {
           onEdit={handleEdit}
           onFilter={handleFilter}
           onSearch={handleSearch}
+          onRefresh={handleRefresh}
           searchValue={searchValue}
         />
-        <div className="flex flex-col h-full w-full bg-gray-100 items-center justify-center">
+        <div className="flex-1 min-h-0 flex items-center justify-center bg-gray-100">
           <div className="text-gray-500 text-lg">
             No table configuration available for: {selectedOption}
           </div>
         </div>
         <AddDataPopup
-            isOpen={isAddPopupOpen}
-            onClose={handleClosePopup}
-            onSave={handleSaveData}
-            selectedOption={selectedOption}
+          isOpen={isAddPopupOpen}
+          onClose={handleClosePopup}
+          onSave={handleSaveData}
+          selectedOption={selectedOption}
         />
-      </>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <TopLeftBar
         onDropdownChange={handleDropdownChange}
         onAdd={handleAdd}
@@ -584,66 +620,65 @@ export function DataTable({ token }: Props) {
         onEdit={handleEdit}
         onFilter={handleFilter}
         onSearch={handleSearch}
+        onRefresh={handleRefresh}
         searchValue={searchValue}
       />
       <AddDataPopup
-            isOpen={isAddPopupOpen}
-            onClose={handleClosePopup}
-            onSave={handleSaveData}
-            selectedOption={selectedOption}
-        />
-      <div className="flex flex-col h-full w-full">
-        <div className="flex-1 overflow-auto bg-brand-F1EDEA rounded-lg shadow">
-          <table className="min-w-full divide-y divide-brand-F1EDEA">
-            <thead className="bg-brand-F1EDEA sticky top-0">
-              <tr>
-                {tableConfig.columns.map((column) => (
-                  <th
-                    key={column.key}
-                    className={`py-3 text-center text-sm font-bold text-black-500`}
-                  >
-                    {column.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-brand-F1EDEA divide-y divide-brand-F1EDEA">
-              {filteredData && filteredData.length > 0 ? (
-                filteredData.map((row, index) => (
-                  <tr
-                    key={index}
-                    className={`hover:bg-gray-50 transition-colors ${
-                      row.id === selectedRow ? "bg-gray-50" : ""
-                    }`}
-                    onClick={() => setSelectedRow(row.id)}
-                  >
-                    {tableConfig.columns.map((column) => (
-                      <td
-                        key={column.key}
-                        className="py-4 text-center whitespace-normal text-sm text-black"
-                      >
-                        {renderCellContent(
-                          (row as any)[column.key],
-                          column.key
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan={tableConfig.columns.length}
-                    className="py-8 text-center text-gray-500"
-                  >
-                    {searchValue ? "No results found" : "No data available"}
-                  </td>
+        isOpen={isAddPopupOpen}
+        onClose={handleClosePopup}
+        onSave={handleSaveData}
+        selectedOption={selectedOption}
+      />
+      <div style={{ maxHeight: '60vh', overflowY: 'auto', width: '100%' }}>
+        <table className="min-w-full divide-y divide-brand-F1EDEA">
+          <thead className="bg-brand-F1EDEA sticky top-0 z-10">
+            <tr>
+              {tableConfig.columns.map((column) => (
+                <th
+                  key={column.key}
+                  className="py-3 text-center text-sm font-bold text-black-500"
+                >
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-brand-F1EDEA divide-y divide-brand-F1EDEA">
+            {filteredData && filteredData.length > 0 ? (
+              filteredData.map((row, index) => (
+                <tr
+                  key={index}
+                  className={`hover:bg-gray-50 transition-colors ${
+                    row.id === selectedRow ? "bg-gray-50" : ""
+                  }`}
+                  onClick={() => setSelectedRow(row.id)}
+                >
+                  {tableConfig.columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className="py-4 text-center whitespace-normal text-sm text-black"
+                    >
+                      {renderCellContent(
+                        (row as any)[column.key],
+                        column.key
+                      )}
+                    </td>
+                  ))}
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={tableConfig.columns.length}
+                  className="py-8 text-center text-gray-500"
+                >
+                  {searchValue ? "No results found" : "No data available"}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-    </>
+    </div>
   );
 }

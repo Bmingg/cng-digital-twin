@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useState } from "react";
-import { Search, Filter, Plus, Trash, Pencil } from "lucide-react";
+import { Search, Filter, Plus, Trash, Pencil, RotateCcw } from "lucide-react";
 
 const styleHover = {
   "&:hover": {
@@ -31,6 +31,7 @@ export function TopLeftBar({
   onEdit,
   onFilter,
   onSearch,
+  onRefresh,
   searchValue,
 }: any) {
   const [selected, setSelected] = useState("");
@@ -143,6 +144,13 @@ export function TopLeftBar({
           sx={styleHover}
         >
           <Pencil className="h-4 w-4" color="#003b2a" />
+        </IconButton>
+        <IconButton
+          onClick={onRefresh}
+          className="flex items-center gap-1"
+          sx={styleHover}
+        >
+          <RotateCcw className="h-4 w-4" color="#003b2a" />
         </IconButton>
       </div>
       <div className="flex items-center gap-2"></div>
