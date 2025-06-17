@@ -88,11 +88,6 @@ export function TopLeftBar({
             padding: "0 8px",
           }}
         >
-          <Search
-            className="h-4 w-4"
-            color="#08dba5"
-            style={{ marginRight: "5px" }}
-          />
         </Box>
 
         <IconButton
