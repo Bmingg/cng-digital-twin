@@ -1,4 +1,5 @@
-'use client';
+"use client";
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { httpGet$GetResourcesTruckTypes } from "@/lib/commands/GetResourcesTruckTypes/fetcher";
 import { httpGet$GetResourcesGasTankTypes } from "@/lib/commands/GetResourcesGasTankTypes/fetcher";
@@ -15,8 +16,27 @@ import useSWR from "swr";
 import { httpGet$GetResourcesStations } from '@/lib/commands/GetResourcesStations/fetcher';
 
 
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: any) => void;
+  selectedOption: Attributes;
+  token: string;
+};
+
+type Attributes =
+  | "truckTypes"
+  | "trucks"
+  | "gasTankTypes"
+  | "gasTanks"
+  | "compressorTypes"
+  | "compressors"
+  | "compressionStations"
+  | "customers"
+  | "orders";
+
 const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) => {
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState<Record<string, number | string>>({});
 
   const swr = {
     GetResourcesTruckTypes: useSWR(
@@ -162,7 +182,7 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
     gasTanks: [
       { key: "id", label: "ID" },
       { key: "gas_tank_type_id", label: "Gas Tank Type ID" },
-      { key: "status", label: "Status" }, 
+      { key: "status", label: "Status" },
       { key: "station_id", label: "Station ID" },
     ],
     compressorTypes: [
@@ -214,19 +234,19 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
   // Reset form data when selectedOption changes or popup opens
   useEffect(() => {
     if (isOpen) {
-      const initialFormData = {};
-      currentAttributes.forEach(attribute => {
+      const initialFormData: Record<string, string> = {};
+      currentAttributes.forEach((attribute) => {
         // Use the key directly from the attribute object
-        initialFormData[attribute.key] = '';
+        initialFormData[attribute.key] = "";
       });
       setFormData(initialFormData);
     }
   }, [isOpen, selectedOption, currentAttributes]);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+  const handleInputChange = (field: string, value: string | number) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -241,7 +261,7 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
   const handleCancel = () => {
     // Reset form
     setFormData({});
-    console.log('Popup cancelled');
+    console.log("Popup cancelled");
     if (onClose) {
       onClose();
     }
@@ -253,7 +273,6 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-brand-BADFCD rounded-2xl shadow-2xl w-full max-w-2xl mx-4">
-        
         {/* Main Content */}
         <div className="p-4 pb-0">
           <div className="grid grid-cols-2">
@@ -262,18 +281,24 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
               {currentAttributes.map((attribute, index) => {
                 const isFirst = index === 0;
                 const isLast = index === currentAttributes.length - 1;
-                
+
                 return (
                   <div
                     key={index}
                     className={`h-12 p-4 bg-brand-F1EDEA border-black border-solid border flex items-center justify-center
-                      ${isFirst ? 'border-t border-l border-r rounded-tl-lg' : 'border-l border-r'}
-                      ${isLast ? 'border-b rounded-bl-lg border-t-0': ''}
-                      ${!isFirst && !isLast ? 'border-t-0' : ''}
+                      ${
+                        isFirst
+                          ? "border-t border-l border-r rounded-tl-lg"
+                          : "border-l border-r"
+                      }
+                      ${isLast ? "border-b rounded-bl-lg border-t-0" : ""}
+                      ${!isFirst && !isLast ? "border-t-0" : ""}
                     `}
                   >
                     {/* Use the label property to display the human-readable text */}
-                    <span className="font-bold text-lg text-gray-800">{attribute.label}</span>
+                    <span className="font-bold text-lg text-gray-800">
+                      {attribute.label}
+                    </span>
                   </div>
                 );
               })}
@@ -286,17 +311,22 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
                 const isLast = index === currentAttributes.length - 1;
                 // Use the key directly from the attribute object
                 const fieldKey = attribute.key;
-                
-                let inputType = 'text';
+
+                let inputType = "text";
                 let placeholder = `Enter ${attribute.label.toLowerCase()}`;
                 let isDropdown = false;
-                let dropdownOptions: any[] = [];
+                let dropdownOptions: string[] = [];
 
-                if (fieldKey === "id" && selectedOption === 'customers') {
+
+                if (fieldKey === "id" && selectedOption === "customers") {
                   // Special case for ID, render a text input
-                  inputType = 'number';
-                };
-                if (fieldKey === "id" && selectedOption === 'compressors' || selectedOption === 'trucks' || selectedOption === 'gasTanks' ) {
+                  inputType = "number";
+                }
+                if (
+                  (fieldKey === "id" && selectedOption === "compressors") ||
+                  selectedOption === "trucks" ||
+                  selectedOption === "gasTanks"
+                ) {
                   // Special case for ID, render a text input
                   inputType = 'number';
                 };
@@ -304,28 +334,48 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
                   // Special case for loading_time, render a number input 
                   inputType = 'number';
                 };
-                if (fieldKey === "status" && selectedOption === 'orders') {
+        
+                if (fieldKey === "status" && selectedOption === "orders") {
                   // Special case for status, render a select input
                   isDropdown = true;
-                  dropdownOptions = ['PENDING', 'IN_PROGRESS', 'ASSIGNED', 'COMPLETED', 'CANCELLED'];
-                  placeholder = 'Select status';
-                };
-                if (fieldKey === "status" && selectedOption !== 'orders') {
+                  dropdownOptions = [
+                    "PENDING",
+                    "IN_PROGRESS",
+                    "ASSIGNED",
+                    "COMPLETED",
+                    "CANCELLED",
+                  ];
+                  placeholder = "Select status";
+                }
+        
+                if (fieldKey === "status" && selectedOption !== "orders") {
                   // Special case for status, render a select input
                   isDropdown = true;
-                  dropdownOptions = ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'OUT_OF_SERVICE'];
-                  placeholder = 'Select status';
-                };
+                  dropdownOptions = [
+                    "AVAILABLE",
+                    "IN_USE",
+                    "MAINTENANCE",
+                    "OUT_OF_SERVICE",
+                  ];
+                  placeholder = "Select status";
+                }
+        
                 if (fieldKey === "owned" ) {
                   // Special case for status, render a select input
                   isDropdown = true;
                   dropdownOptions = ['Owned', 'Rented'];
                   placeholder = 'Select status';
                 };
-                if (fieldKey === "number_of_compressors" || fieldKey === "count" || fieldKey === "capacity" || fieldKey === "capacity_m3") {
+        
+                if (
+                  fieldKey === "number_of_compressors" ||
+                  fieldKey === "count" ||
+                  fieldKey === "capacity" ||
+                  fieldKey === "capacity_m3"
+                ) {
                   // Special case for count and capacity, render a number input
-                  inputType = 'number';
-                };
+                  inputType = "number";
+                }
 
                 if (selectedOption === "orders" && fieldKey === "customer_id") {
                   // Special case for customer_id, render a select input
@@ -403,37 +453,52 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
                 };
 
 
-
                 return (
                   <div key={index} className="h-12">
                     {isDropdown ? (
                       <select
-                        value={formData[fieldKey] || ''}
-                        onChange={(e) => handleInputChange(fieldKey, e.target.value)}
+                        value={formData[fieldKey] || ""}
+                        onChange={(e) =>
+                          handleInputChange(fieldKey, e.target.value)
+                        }
                         className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
-                          ${isFirst ? 'border-t border-l border-r rounded-tr-lg' : 'border-r'}
-                          ${isLast ? 'border-b rounded-br-lg border-t-0' : ''}
-                          ${!isFirst && !isLast ? 'border-t-0' : ''}
+                          ${
+                            isFirst
+                              ? "border-t border-l border-r rounded-tr-lg"
+                              : "border-r"
+                          }
+                          ${isLast ? "border-b rounded-br-lg border-t-0" : ""}
+                          ${!isFirst && !isLast ? "border-t-0" : ""}
                         `}
                       >
-                        <option value="" disabled>{placeholder}</option>
+                        <option value="" disabled>
+                          {placeholder}
+                        </option>
                         {dropdownOptions.map((option, idx) => (
-                          <option key={idx} value={option}>{option}</option>
+                          <option key={idx} value={option}>
+                            {option}
+                          </option>
                         ))}
                       </select>
                     ) : (
-                    <input
-                      type={inputType}
-                      placeholder={placeholder}
-                      value={formData[fieldKey] || ''}
-                      onChange={(e) => handleInputChange(fieldKey, e.target.value)}
-                      className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
-                        ${isFirst ? 'border-t border-l border-r rounded-tr-lg' : 'border-r'}
-                        ${isLast ? 'border-b rounded-br-lg border-t-0' : ''}
-                        ${!isFirst && !isLast ? 'border-t-0' : ''}
+                      <input
+                        type={inputType}
+                        placeholder={placeholder}
+                        value={formData[fieldKey] || ""}
+                        onChange={(e) =>
+                          handleInputChange(fieldKey, e.target.value)
+                        }
+                        className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
+                        ${
+                          isFirst
+                            ? "border-t border-l border-r rounded-tr-lg"
+                            : "border-r"
+                        }
+                        ${isLast ? "border-b rounded-br-lg border-t-0" : ""}
+                        ${!isFirst && !isLast ? "border-t-0" : ""}
                       `}
-                    />
-                      )}
+                      />
+                    )}
                   </div>
                 );
               })}

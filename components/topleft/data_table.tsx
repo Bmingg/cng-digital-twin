@@ -5,7 +5,6 @@ import { httpGet$GetResourcesGasTankTypes } from "@/lib/commands/GetResourcesGas
 import { httpGet$GGetResourcesCompressors } from "@/lib/commands/GetResourcesCompressors/fetcher";
 import { httpGet$GetResourcesCompressionStations } from "@/lib/commands/GetResourcesCompressionStations/fetcher";
 import { httpGet$GetResourcesCustomers } from "@/lib/commands/GetResourcesCustomers/fetcher";
-import { httpGet$GetResourcesOrders } from "@/lib/commands/GetResourcesOrders/fetcher";
 import { httpGet$GetResourcesAllOrders } from "@/lib/commands/GetResourcesAllOrders/fetcher";
 import { httpGet$GetResourcesGasTanks } from "@/lib/commands/GetResourcesGasTanks/fetcher";
 import { httpGet$GetResourcesCompressorTypes } from "@/lib/commands/GetResourcesCompressorTypes/fetcher";
@@ -210,8 +209,8 @@ export function DataTable({ token }: Props) {
 
   const handleSaveData = async (data: any) => {
     if (!selectedOption) return;
-    
-    console.log('Saved data:', data);
+
+    console.log("Saved data:", data);
     if (selectedOption === "truckTypes") {
       await httpPost$CreateTruckTypes(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types/`,
@@ -267,7 +266,7 @@ export function DataTable({ token }: Props) {
         data,
         token
       );
-      setIsAddPopupOpen(false); 
+      setIsAddPopupOpen(false);
       swr.GetResourcesCompressorTypes.mutate(); // Refresh the compressor types data
     }
     if (selectedOption === "compressors") {
@@ -289,8 +288,8 @@ export function DataTable({ token }: Props) {
           ...rest,
           gps_coordinates: {
             latitude,
-            longitude
-          }
+            longitude,
+          },
         };
       };
       const transformedData = transformDataFormat(data);
@@ -335,7 +334,8 @@ export function DataTable({ token }: Props) {
       setIsAddPopupOpen(false);
       swr.GetResourcesStations.mutate(); // Refresh the compression stations data
     }
-  }
+  };
+  
   const swr = {
     GetResourcesTruckTypes: useSWR(
       ["/api/resources/truck-types/"],
@@ -400,7 +400,7 @@ export function DataTable({ token }: Props) {
     GetResourcesCompressors: useSWR(
       ["/api/resources/compressors/"],
       async () =>
-        await httpGet$GGetResourcesCompressors( 
+        await httpGet$GGetResourcesCompressors(
           `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors/`,
           {
             limit: 100,
@@ -465,7 +465,7 @@ export function DataTable({ token }: Props) {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types`,
         { id: selectedRow },
-        token,
+        token
       );
       alert("Truck type deleted successfully");
       swr.GetResourcesTruckTypes.mutate(); // Refresh the truck types data
@@ -474,7 +474,7 @@ export function DataTable({ token }: Props) {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/orders`,
         { id: selectedRow },
-        token,
+        token
       );
       swr.GetResourcesAllOrders.mutate(); // Refresh the orders data
     }
@@ -482,7 +482,7 @@ export function DataTable({ token }: Props) {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types`,
         { id: selectedRow },
-        token,
+        token
       );
       swr.GetResourcesGasTankTypes.mutate(); // Refresh the gas tank types data
     }
@@ -490,7 +490,7 @@ export function DataTable({ token }: Props) {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks`,
         { id: selectedRow },
-        token,
+        token
       );
       swr.GetResourcesGasTanks.mutate(); // Refresh the gas tanks data
     }
@@ -498,15 +498,15 @@ export function DataTable({ token }: Props) {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks`,
         { id: selectedRow },
-        token,
+        token
       );
       swr.GetResourcesTrucks.mutate(); // Refresh the trucks data
     }
-    if (selectedOption === "compressorTypes") { 
+    if (selectedOption === "compressorTypes") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types`,
         { id: selectedRow },
-        token,
+        token
       );
       swr.GetResourcesCompressorTypes.mutate(); // Refresh the compressor types data
     }
@@ -514,7 +514,7 @@ export function DataTable({ token }: Props) {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors`,
         { id: selectedRow },
-        token,
+        token
       );
       swr.GetResourcesCompressors.mutate(); // Refresh the compressors data
     }
@@ -522,7 +522,7 @@ export function DataTable({ token }: Props) {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-stations`,
         { id: selectedRow },
-        token,
+        token
       );
       swr.GetResourcesCompressionStations.mutate(); // Refresh the compression stations data
     }
@@ -530,7 +530,7 @@ export function DataTable({ token }: Props) {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/customers`,
         { id: selectedRow },
-        token,
+        token
       );
       swr.GetResourcesCustomers.mutate(); // Refresh the customers data
     }
@@ -578,17 +578,21 @@ export function DataTable({ token }: Props) {
           ],
           data: swr.GetResourcesGasTankTypes.data ?? [],
         };
-      
+
       case "gasTanks":
-        const gasTanksData  = swr.GetResourcesGasTanks.data;
-        const modifiedGasTankData = gasTanksData 
-          ? gasTanksData.map(({ gas_tank_type, station, ...rest }) => rest)
+        const gasTanksData = swr.GetResourcesGasTanks.data;
+        const modifiedGasTankData = gasTanksData
+          ? gasTanksData.map(({ gas_tank_type, station, ...rest }) => ({
+              ...rest,
+              vmax: gas_tank_type.vmax,
+            }))
           : [];
         return {
           columns: [
             { key: "id", label: "ID" },
             { key: "gas_tank_type_id", label: "Gas Tank Type ID" },
             { key: "status", label: "Status" },
+            { key: "vmax", label: "Vmax" },
             { key: "station_id", label: "Station ID" },
           ],
           data: modifiedGasTankData ?? [],
@@ -596,7 +600,7 @@ export function DataTable({ token }: Props) {
         };
       case "trucks":
         const trucksData = swr.GetResourcesTrucks.data;
-        const modifiedTruckData = trucksData 
+        const modifiedTruckData = trucksData
           ? trucksData.map(({ truck_type, station, ...rest }) => rest)
           : [];
         return {
@@ -619,10 +623,12 @@ export function DataTable({ token }: Props) {
           ],
           data: swr.GetResourcesCompressorTypes.data ?? [],
         };
-      case "compressors": 
+      case "compressors":
         const compressorsData = swr.GetResourcesCompressors.data;
-        const modifiedCompressorsData = compressorsData 
-          ? compressorsData.map(({ compressor_type, compressor_station, ...rest }) => rest)
+        const modifiedCompressorsData = compressorsData
+          ? compressorsData.map(
+              ({ compressor_type, compressor_station, ...rest }) => rest
+            )
           : [];
         return {
           columns: [
@@ -635,7 +641,8 @@ export function DataTable({ token }: Props) {
           // data: swr.GetResourcesCompressors.data ?? [],
         };
       case "compressionStations":
-        const compressionStationsData = swr.GetResourcesCompressionStations.data;
+        const compressionStationsData =
+          swr.GetResourcesCompressionStations.data;
         const modifiedCompressionStationsData = compressionStationsData
           ? compressionStationsData.map(({ gps_coordinates, ...rest }) => rest)
           : [];
@@ -646,7 +653,7 @@ export function DataTable({ token }: Props) {
             { key: "address", label: "Address" },
             { key: "number_of_compressors", label: "Number of Compressors" },
             { key: "latitude", label: "Latitude" },
-            { key: "longitude", label: "Longitude" }, 
+            { key: "longitude", label: "Longitude" },
           ],
           data: modifiedCompressionStationsData ?? [],
           // data: swr.GetResourcesCompressionStations.data ?? [],
@@ -678,7 +685,7 @@ export function DataTable({ token }: Props) {
             { key: "priority_level", label: "Priority Level" },
             { key: "status", label: "Status" },
           ],
-          data:  swr.GetResourcesAllOrders.data ?? [],
+          data: swr.GetResourcesAllOrders.data ?? [],
         };
       case "stations":
         const stationsData = swr.GetResourcesStations.data;
@@ -748,8 +755,6 @@ export function DataTable({ token }: Props) {
           onDelete={handleDelete}
           onEdit={handleEdit}
           onFilter={handleFilter}
-          onSearch={handleSearch}
-          searchValue={searchValue}
         />
         <div className="flex flex-col h-full w-full bg-gray-100 items-center justify-center">
           <div className="text-gray-500 text-lg">
@@ -769,8 +774,6 @@ export function DataTable({ token }: Props) {
           onDelete={handleDelete}
           onEdit={handleEdit}
           onFilter={handleFilter}
-          onSearch={handleSearch}
-          searchValue={searchValue}
         />
         <div className="flex flex-col h-full w-full bg-gray-100 items-center justify-center">
           <div className="text-gray-500 text-lg">
@@ -804,8 +807,6 @@ export function DataTable({ token }: Props) {
         onDelete={handleDelete}
         onEdit={handleEdit}
         onFilter={handleFilter}
-        onSearch={handleSearch}
-        searchValue={searchValue}
       />
       <AddDataPopup
             isOpen={isAddPopupOpen}
@@ -845,7 +846,7 @@ export function DataTable({ token }: Props) {
                     className={`hover:bg-gray-50 transition-colors ${
                       row.id === selectedRow ? "bg-gray-50" : ""
                     }`}
-                    onClick={() => setSelectedRow(row.id)}
+                    onClick={() => setSelectedRow(row.id.toString())}
                   >
                     {tableConfig.columns.map((column) => (
                       <td

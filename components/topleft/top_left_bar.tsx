@@ -1,17 +1,6 @@
 "use client";
-import {
-  Select,
-  MenuItem,
-  Box,
-  IconButton,
-  Typography,
-  Button,
-  TextField,
-  FormControl,
-  InputLabel,
-  Input,
-  InputAdornment,
-} from "@mui/material";
+import { Select, MenuItem, Box, IconButton, FormControl } from "@mui/material";
+
 import { useState } from "react";
 import { Search, Filter, Plus, Trash, Pencil } from "lucide-react";
 
@@ -23,15 +12,21 @@ const styleHover = {
   backgroundColor: "#e6ebe9",
 };
 
+type Props = {
+  onDropdownChange: (value: string) => void;
+  onAdd: () => void;
+  onDelete: () => Promise<void>;
+  onEdit: () => void;
+  onFilter: () => void;
+};
+
 export function TopLeftBar({
   onDropdownChange,
   onAdd,
   onDelete,
   onEdit,
   onFilter,
-  onSearch,
-  searchValue,
-}: any) {
+}: Props) {
   const [selected, setSelected] = useState("");
 
   const handleChange = (event: any) => {
@@ -39,10 +34,6 @@ export function TopLeftBar({
     setSelected(value);
     onDropdownChange(value);
   };
-  const handleSearchChange = (event: any) => {
-    onSearch(event.target.value);
-  };
-
   return (
     <div className="flex items-center justify-between h-12 px-2 py-2 bg-brand-BDC3C0 border-b z-1">
       <div className="flex items-center space-x-2">
@@ -101,18 +92,6 @@ export function TopLeftBar({
             className="h-4 w-4"
             color="#08dba5"
             style={{ marginRight: "5px" }}
-          />
-          <TextField
-            sx={{
-              borderRadius: "10px",
-            }}
-            id="search-input"
-            type="search"
-            variant="standard"
-            placeholder="Search..."
-            onChange={handleSearchChange}
-            value={searchValue}
-            InputProps={{ disableUnderline: true }}
           />
         </Box>
 

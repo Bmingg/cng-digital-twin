@@ -1,14 +1,16 @@
 "use client";
+import { AddAssignmentToPlan$Params } from "@/lib/commands/AddAssignmentToPlan/typing";
 import React, { useState, useEffect } from "react";
 
 type Props = {
+  date: string;
   isOpen: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (params: AddAssignmentToPlan$Params) => Promise<void>;
 };
 
-const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
-  const [formData, setFormData] = useState({});
+const AddAssignmentPopup = ({ date, isOpen, onClose, onSave }: Props) => {
+  const [formData, setFormData] = useState<Record<string, string | number>>({});
 
   // Fixed attribute set for assignment window
   const assignmentAttributes = [
@@ -16,15 +18,13 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
     "Truck ID",
     "Tank ID",
     "Compressor ID",
-    "Status",
     "Estimated",
-    "Actual",
   ];
 
   // Reset form data when popup opens
   useEffect(() => {
     if (isOpen) {
-      const initialFormData = {};
+      let initialFormData: Record<string, string> = {};
       assignmentAttributes.forEach((attribute) => {
         const fieldKey = attribute
           .toLowerCase()
@@ -36,19 +36,40 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
     }
   }, [isOpen]);
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  const handleSave = () => {
-    if (onSave) {
-      onSave(formData);
+  const handleSave = async () => {
+    const newDate = new Date(date);
+    const time: string = formData["estimated"].toString();
+    if (time.length !== 5) {
+      alert("invalid input time");
+      return;
     }
-    // Reset form
-    setFormData({});
+    let [hours, minutes] = time.split(":").map(Number);
+    newDate.setUTCHours(hours, minutes, 0);
+    const params = {
+      order_id: formData["orderid"].toString(),
+      truck_id:
+        typeof formData["truckid"] === "string"
+          ? parseInt(formData["truckid"])
+          : formData["truckid"],
+      tank_id:
+        typeof formData["tankid"] === "string"
+          ? parseInt(formData["tankid"])
+          : formData["tankid"],
+      compressor_id:
+        typeof formData["compressorid"] === "string"
+          ? parseInt(formData["compressorid"])
+          : formData["compressorid"],
+      estimated_start_time: newDate.toISOString(),
+    };
+    await onSave(params);
+    // setFormData({});
   };
 
   const handleCancel = () => {
@@ -122,8 +143,13 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
                 ) {
                   inputType = "time";
                   placeholder = "";
-                } else if (attribute.includes("ID")) {
+                } else if (
+                  attribute === "Truck ID" ||
+                  attribute === "Tank ID"
+                ) {
                   inputType = "number";
+                } else {
+                  inputType = "string";
                 }
 
                 return (
