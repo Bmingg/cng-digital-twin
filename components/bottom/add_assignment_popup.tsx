@@ -110,7 +110,7 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
                 let inputType = "text";
                 let placeholder = `Enter ${attribute.toLowerCase()}`;
                 let isDropdown = false;
-                let dropdownOptions = [];
+                let dropdownOptions: any[] = [];
 
                 if (attribute === "Status") {
                   isDropdown = true;

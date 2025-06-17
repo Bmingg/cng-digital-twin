@@ -64,8 +64,10 @@ export function ScheduleTable({ onRowDoubleClick, token }: Props) {
     if (!selectedRow) return;
     await httpDelete$DeleteResources(
       `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans`,
-      { id: selectedRow }
+      { id: selectedRow },
+      token
     );
+    swr.GetDispatchPlans.mutate(); // Revalidate the SWR cache
   };
 
   const handleCloseSchedule = () => {

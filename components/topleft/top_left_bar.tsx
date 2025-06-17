@@ -12,7 +12,6 @@ import {
   Input,
   InputAdornment,
 } from "@mui/material";
-import Link from "next/link";
 import { useState } from "react";
 import { Search, Filter, Plus, Trash, Pencil } from "lucide-react";
 
@@ -84,6 +83,7 @@ export function TopLeftBar({
               </MenuItem>
               <MenuItem value="customers">Customers</MenuItem>
               <MenuItem value="orders">Orders</MenuItem>
+              <MenuItem value="stations">Stations</MenuItem>
               {/* Add more options as needed */}
             </Select>
           </FormControl>

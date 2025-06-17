@@ -1,6 +1,5 @@
 "use client";
 
-import { z } from "zod";
 import { httpGet$GetResourcesTruckTypes } from "@/lib/commands/GetResourcesTruckTypes/fetcher";
 import { httpGet$GetResourcesGasTankTypes } from "@/lib/commands/GetResourcesGasTankTypes/fetcher";
 import { httpGet$GGetResourcesCompressors } from "@/lib/commands/GetResourcesCompressors/fetcher";
@@ -12,7 +11,7 @@ import { httpGet$GetResourcesGasTanks } from "@/lib/commands/GetResourcesGasTank
 import { httpGet$GetResourcesCompressorTypes } from "@/lib/commands/GetResourcesCompressorTypes/fetcher";
 import { httpGet$GetResourcesTrucks } from "@/lib/commands/GetResourcesTrucks/fetcher";
 import { CLIENT_ENV } from "@/lib/env";
-import { use, useMemo } from "react";
+import { useMemo } from "react";
 import React from "react";
 import useSWR from "swr";
 import { TopLeftBar } from "./top_left_bar";
@@ -27,6 +26,8 @@ import { httpPost$CreateCompressorTypes } from "@/lib/commands/CreateCompressorT
 import { httpPost$CreateCompressors } from "@/lib/commands/CreateCompressors/fetcher";
 import { httpPost$CreateCompressionStations } from "@/lib/commands/CreateCompressionStations/fetcher";
 import { httpPost$CreateCustomers } from "@/lib/commands/CreateCustomers/fetcher";
+import { httpPost$CreateStations } from "@/lib/commands/CreateStations/fetcher";
+import { httpGet$GetResourcesStations } from "@/lib/commands/GetResourcesStations/fetcher";
 
 type Props = {
   token: string;
@@ -78,7 +79,6 @@ export function DataTable({ token }: Props) {
     }
     if (selectedOption === "gasTankTypes") {
       // Handle saving gas tank types
-      console.log('It goes here', data);
       await httpPost$CreateGasTankTypes(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types/`,
         data,
@@ -140,7 +140,6 @@ export function DataTable({ token }: Props) {
         };
       };
       const transformedData = transformDataFormat(data);
-      console.log('Transformed data:', transformedData);
 
       await httpPost$CreateCompressionStations(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compression-stations/`,
@@ -159,6 +158,28 @@ export function DataTable({ token }: Props) {
       );
       setIsAddPopupOpen(false);
       swr.GetResourcesCustomers.mutate(); // Refresh the customers data
+    }
+    if (selectedOption === "stations") {
+      // Handle saving stations
+      const transformDataFormat = (data: any) => {
+        const { latitude, longitude, ...rest } = data;
+        return {
+          ...rest,
+          gps_coordinates: {
+            latitude,
+            longitude
+          }
+        };
+      };
+      const transformedData = transformDataFormat(data);
+
+      await httpPost$CreateStations(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/compression-stations/`,
+        transformedData,
+        token
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesStations.mutate(); // Refresh the compression stations data
     }
   }
   const swr = {
@@ -266,6 +287,18 @@ export function DataTable({ token }: Props) {
           token
         )
     ),
+    GetResourcesStations: useSWR(
+      ["/api/resources/stations/"],
+      async () =>
+        await httpGet$GetResourcesStations(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/stations/`,
+          {
+            limit: 100,
+            skip: 0,
+          },
+          token
+        )
+    ),
   };
 
   const handleDropdownChange = (value: string) => {
@@ -280,6 +313,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      alert("Truck type deleted successfully");
       swr.GetResourcesTruckTypes.mutate(); // Refresh the truck types data
     }
     if (selectedOption === "orders") {
@@ -345,6 +379,14 @@ export function DataTable({ token }: Props) {
         token,
       );
       swr.GetResourcesCustomers.mutate(); // Refresh the customers data
+    }
+    if (selectedOption === "stations") {
+      await httpDelete$DeleteResources(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/stations`,
+        { id: selectedRow },
+        token,
+      );
+      swr.GetResourcesStations.mutate(); // Refresh the stations data
     }
   };
 
@@ -484,6 +526,20 @@ export function DataTable({ token }: Props) {
           ],
           data:  swr.GetResourcesAllOrders.data ?? [],
         };
+      case "stations":
+        const stationsData = swr.GetResourcesStations.data;
+        const modifiedStationsData = stationsData
+          ? stationsData.map(({ gps_coordinates, ...rest }) => rest)
+          : [];
+        return {
+          columns: [
+            { key: "id", label: "ID" },
+            { key: "address", label: "Address" },
+            { key: "latitude", label: "Latitude" },
+            { key: "longitude", label: "Longitude" }, 
+          ],
+          data: modifiedStationsData ?? [],
+        };
 
       default:
         return {
@@ -570,6 +626,7 @@ export function DataTable({ token }: Props) {
             onClose={handleClosePopup}
             onSave={handleSaveData}
             selectedOption={selectedOption}
+            token={token}
         />
       </>
     );
@@ -591,6 +648,7 @@ export function DataTable({ token }: Props) {
             onClose={handleClosePopup}
             onSave={handleSaveData}
             selectedOption={selectedOption}
+            token={token}
         />
       <div className="flex flex-col h-full w-full">
         <div className="flex-1 overflow-auto bg-brand-F1EDEA rounded-lg shadow">

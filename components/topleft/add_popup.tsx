@@ -1,8 +1,141 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
+import { httpGet$GetResourcesTruckTypes } from "@/lib/commands/GetResourcesTruckTypes/fetcher";
+import { httpGet$GetResourcesGasTankTypes } from "@/lib/commands/GetResourcesGasTankTypes/fetcher";
+import { httpGet$GGetResourcesCompressors } from "@/lib/commands/GetResourcesCompressors/fetcher";
+import { httpGet$GetResourcesCompressionStations } from "@/lib/commands/GetResourcesCompressionStations/fetcher";
+import { httpGet$GetResourcesCustomers } from "@/lib/commands/GetResourcesCustomers/fetcher";
+import { httpGet$GetResourcesOrders } from "@/lib/commands/GetResourcesOrders/fetcher";
+import { httpGet$GetResourcesAllOrders } from "@/lib/commands/GetResourcesAllOrders/fetcher";
+import { httpGet$GetResourcesGasTanks } from "@/lib/commands/GetResourcesGasTanks/fetcher";
+import { httpGet$GetResourcesCompressorTypes } from "@/lib/commands/GetResourcesCompressorTypes/fetcher";
+import { httpGet$GetResourcesTrucks } from "@/lib/commands/GetResourcesTrucks/fetcher";
+import { CLIENT_ENV } from "@/lib/env";
+import useSWR from "swr";
+import { httpGet$GetResourcesStations } from '@/lib/commands/GetResourcesStations/fetcher';
 
-const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption }: any) => {
+
+const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) => {
   const [formData, setFormData] = useState({});
+
+  const swr = {
+    GetResourcesTruckTypes: useSWR(
+      ["/api/resources/truck-types/"],
+      async () =>
+        await httpGet$GetResourcesTruckTypes(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types/`,
+          {
+            limit: 100,
+            skip: 0,
+          },
+          token
+        )
+    ),
+    GetResourcesGasTankTypes: useSWR(
+      ["/api/resources/gas-tank-types/"],
+      async () =>
+        await httpGet$GetResourcesGasTankTypes(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types/`,
+          {
+            limit: 100,
+            skip: 0,
+          },
+          token
+        )
+    ),
+    GetResourcesGasTanks: useSWR(
+      ["/api/resources/gas-tanks/"],
+      async () =>
+        await httpGet$GetResourcesGasTanks(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks/`,
+          {
+            limit: 100,
+            skip: 0,
+          },
+          token
+        )
+    ),
+    GetResourcesTrucks: useSWR(
+      ["/api/resources/trucks/"],
+      async () =>
+        await httpGet$GetResourcesTrucks(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks/`,
+          {
+            limit: 100,
+            skip: 0,
+          },
+          token
+        )
+    ),
+    GetResourcesCompressorTypes: useSWR(
+      ["/api/resources/compressor-types/"],
+      async () =>
+        await httpGet$GetResourcesCompressorTypes(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types/`,
+          {
+            limit: 100,
+            skip: 0,
+          },
+          token
+        )
+    ),
+    GetResourcesCompressors: useSWR(
+      ["/api/resources/compressors/"],
+      async () =>
+        await httpGet$GGetResourcesCompressors( 
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors/`,
+          {
+            limit: 100,
+            skip: 0,
+          },
+          token
+        )
+    ),
+    GetResourcesCompressionStations: useSWR(
+      ["/api/resources/compression-stations/"],
+      async () =>
+        await httpGet$GetResourcesCompressionStations(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/compression-stations/`,
+          {
+            limit: 100,
+            skip: 0,
+          },
+          token
+        )
+    ),
+    GetResourcesCustomers: useSWR(
+      ["/api/resources/customers/"],
+      async () =>
+        await httpGet$GetResourcesCustomers(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/customers/`,
+          {
+            limit: 10000,
+            skip: 0,
+          },
+          token
+        )
+    ),
+    GetResourcesAllOrders: useSWR(
+      ["/api/orders/"],
+      async () =>
+        await httpGet$GetResourcesAllOrders(
+          `${CLIENT_ENV.BACKEND_URL}/api/orders/`,
+          token
+        )
+    ),
+    GetResourcesStations: useSWR(
+      ["/api/resources/stations/"],
+      async () =>
+        await httpGet$GetResourcesStations(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/stations/`,
+          {
+            limit: 100,
+            skip: 0,
+          },
+          token
+        )
+    ),
+  };
 
   const attributeSets = {
     truckTypes: [
@@ -42,7 +175,7 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption }: any) => {
       { key: "id", label: "ID" },
       { key: "compressor_type_id", label: "Compressor Type ID" },
       { key: "status", label: "Status" },
-      { key: "station_id", label: "Station ID" },
+      { key: "compressor_station_id", label: "Compressor Station ID" },
     ],
     compressionStations: [
       { key: "id", label: "ID" },
@@ -66,6 +199,12 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption }: any) => {
       { key: "priority_level", label: "Priority Level" },
       { key: "status", label: "Status" },
     ],
+    stations: [
+      { key: "id", label: "ID" },
+      { key: "address", label: "Address" },
+      { key: "latitude", label: "Latitude" },
+      { key: "longitude", label: "Longitude" },
+    ]
   };
 
   // Get current attributes based on selectedOption - memoized to prevent infinite re-renders
@@ -143,7 +282,7 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption }: any) => {
 
             {/* Right Column - Input Fields */}
             <div>
-              {currentAttributes.map((attribute, index) => {
+              {currentAttributes.map((attribute: { key: any; label: string; }, index: React.Key | null | undefined) => {
                 const isFirst = index === 0;
                 const isLast = index === currentAttributes.length - 1;
                 // Use the key directly from the attribute object
@@ -152,7 +291,7 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption }: any) => {
                 let inputType = 'text';
                 let placeholder = `Enter ${attribute.label.toLowerCase()}`;
                 let isDropdown = false;
-                let dropdownOptions = [];
+                let dropdownOptions: any[] = [];
 
                 if (fieldKey === "id" && selectedOption === 'customers') {
                   // Special case for ID, render a text input
@@ -162,43 +301,108 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption }: any) => {
                   // Special case for ID, render a text input
                   inputType = 'number';
                 };
-                if (fieldKey === "number_of_compressors" ) {
-                  // Special case for number_of_compressors, render a number input
-                  inputType = 'number';
-                };
-
-                
-
                 if (fieldKey === "loading_time") {
                   // Special case for loading_time, render a number input 
                   inputType = 'number';
                 };
-
                 if (fieldKey === "status" && selectedOption === 'orders') {
                   // Special case for status, render a select input
                   isDropdown = true;
                   dropdownOptions = ['PENDING', 'IN_PROGRESS', 'ASSIGNED', 'COMPLETED', 'CANCELLED'];
                   placeholder = 'Select status';
                 };
-                
                 if (fieldKey === "status" && selectedOption !== 'orders') {
                   // Special case for status, render a select input
                   isDropdown = true;
                   dropdownOptions = ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'OUT_OF_SERVICE'];
                   placeholder = 'Select status';
                 };
-
                 if (fieldKey === "owned" ) {
                   // Special case for status, render a select input
                   isDropdown = true;
                   dropdownOptions = ['Owned', 'Rented'];
                   placeholder = 'Select status';
                 };
-
-                if (fieldKey === "count" || fieldKey === "capacity" || fieldKey === "capacity_m3") {
+                if (fieldKey === "number_of_compressors" || fieldKey === "count" || fieldKey === "capacity" || fieldKey === "capacity_m3") {
                   // Special case for count and capacity, render a number input
                   inputType = 'number';
                 };
+
+                if (selectedOption === "orders" && fieldKey === "customer_id") {
+                  // Special case for customer_id, render a select input
+                  isDropdown = true;
+                  dropdownOptions = [];
+                  // Extract unique customer IDs from the SWR data
+                  const customersData = swr.GetResourcesCustomers.data;
+                  customersData?.forEach(customer => { 
+                    dropdownOptions.push(customer.id);
+                  });
+                  placeholder = 'Select Customer';
+                };
+
+                if (selectedOption === "gasTanks" && fieldKey === "gas_tank_type_id") {
+                  isDropdown = true;
+                  dropdownOptions = [];
+                  // Extract unique gas tank type IDs from the SWR data
+                  const gasTankTypesData = swr.GetResourcesGasTankTypes.data;
+                  gasTankTypesData?.forEach(type => {
+                    dropdownOptions.push(type.id);
+                  });
+                  placeholder = 'Select Gas Tank Type';
+                };
+
+                if (selectedOption === "gasTanks" && fieldKey === "station_id") {
+                  isDropdown = true;
+                  dropdownOptions = [];
+                  // Extract unique gas tank type IDs from the SWR data
+                  const gasTankTypesData = swr.GetResourcesStations.data;
+                  gasTankTypesData?.forEach(type => {
+                    dropdownOptions.push(type.id);
+                  });
+                  placeholder = 'Select Gas Tank Type';
+                };
+                
+                if (selectedOption === "trucks" && fieldKey === "truck_type_id") {
+                  isDropdown = true;
+                  dropdownOptions = [];
+                  // Extract unique truck type IDs from the SWR data
+                  const truckTypesData = swr.GetResourcesTruckTypes.data;
+                  truckTypesData?.forEach(type => {
+                    dropdownOptions.push(type.id);
+                  });
+                  placeholder = 'Select Truck Type';
+                };
+                if (selectedOption === "trucks" && fieldKey === "station_id") {
+                  isDropdown = true;
+                  dropdownOptions = [];
+                  // Extract unique station IDs from the SWR data
+                  const stationsData = swr.GetResourcesStations.data;
+                  stationsData?.forEach(station => {
+                    dropdownOptions.push(station.id);
+                  });
+                  placeholder = 'Select Station';
+                };
+                if (selectedOption === "compressors" && fieldKey === "compressor_type_id") {
+                  isDropdown = true;
+                  dropdownOptions = [];
+                  // Extract unique compressor type IDs from the SWR data
+                  const compressorTypesData = swr.GetResourcesCompressorTypes.data;
+                  compressorTypesData?.forEach(type => {
+                    dropdownOptions.push(type.id);
+                  });
+                  placeholder = 'Select Compressor Type';
+                };
+                if (selectedOption === "compressors" && fieldKey === "compressor_station_id") {
+                  isDropdown = true;
+                  dropdownOptions = [];
+                  // Extract unique compressor station IDs from the SWR data
+                  const compressorStationsData = swr.GetResourcesCompressionStations.data;
+                  compressorStationsData?.forEach(station => {
+                    dropdownOptions.push(station.id);
+                  });
+                  placeholder = 'Select Compressor Station';
+                };
+
 
 
                 return (
