@@ -1,15 +1,10 @@
 "use client";
 import Image from "next/image";
-import {
-  Select,
-  MenuItem,
-  Box,
-  IconButton,
-  Button,
-  FormControl,
-} from "@mui/material";
-import { useState, useMemo } from "react";
+import { Box, IconButton, Button, FormControl } from "@mui/material";
+import { useMemo } from "react";
 import { Plus, Trash } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const styleHover = {
   "&:hover": {
@@ -50,19 +45,23 @@ const generateLastFiveDates = () => {
 };
 
 type Props = {
-  onDropdownDateChange: (value: string) => void;
+  selectedDate: Date | null;
+  onDropdownDateChange: (date: Date | null) => void;
   onAddSchedule: () => void;
   onDeleteSchedule: () => void;
 };
 
-export function BottomLeftBar({ onDropdownDateChange, onAddSchedule, onDeleteSchedule }: Props) {
-  const [selected, setSelected] = useState("");
-
+export function BottomLeftBar({
+  selectedDate,
+  onDropdownDateChange,
+  onAddSchedule,
+  onDeleteSchedule,
+}: Props) {
   const dateOptions = useMemo(() => generateLastFiveDates(), []);
 
   return (
     <div className="flex items-center justify-between h-12 px-2 py-2 bg-brand-BDC3C0 border-b z-1">
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 ml-6">
         <Box
           sx={{
             display: "flex",
@@ -75,30 +74,10 @@ export function BottomLeftBar({ onDropdownDateChange, onAddSchedule, onDeleteSch
             variant="standard"
             sx={{ width: "150px", marginLeft: 1 }}
           >
-            <Select
-              variant="standard"
-              disableUnderline
-              value={selected}
-              onChange={(event) => {
-                const value = event.target.value;
-                setSelected(value);
-                onDropdownDateChange(value);
-              }}
-              displayEmpty
-              sx={{
-                borderRadius: "12px",
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderRadius: "12px",
-                },
-              }}
-            >
-              <MenuItem value="">Select date...</MenuItem>
-              {dateOptions.map((dateOption) => (
-                <MenuItem key={dateOption.value} value={dateOption.displayText}>
-                  {dateOption.displayText}
-                </MenuItem>
-              ))}
-            </Select>
+            <DatePicker
+              selected={selectedDate}
+              onChange={(date) => onDropdownDateChange(date)}
+            />
           </FormControl>
         </Box>
         <Box
@@ -133,10 +112,11 @@ export function BottomLeftBar({ onDropdownDateChange, onAddSchedule, onDeleteSch
         >
           <Plus className="h-4 w-4" color="#003b2a" />
         </IconButton>
-        <IconButton 
+        <IconButton
           onClick={onDeleteSchedule}
-          className="flex items-center gap-1" 
-          sx={styleHover}>
+          className="flex items-center gap-1"
+          sx={styleHover}
+        >
           <Trash className="h-4 w-4" color="#003b2a" />
         </IconButton>
       </div>

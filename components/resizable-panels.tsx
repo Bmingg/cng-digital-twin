@@ -143,18 +143,14 @@ type Props = {
 
 // Main ResizablePanels component
 export function ResizablePanels({ token }: Props) {
-
   const [openTabs, setOpenTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState<string | undefined>();
 
   const handleRowDoubleClick = (row: TableConfig["data"][0]) => {
-    const tabId = `${row.id}-${row.date}`;
-    console.log("Row double-clicked:", row, "Tab ID:", tabId);
-    console.log("Tab date:", row.date);
+    const tabId = `${row.id}`;
     const temp = row.date;
-    const temp3 = temp.slice(0, -5);
     const temp2 = temp.substring(0, row.date.length - 5);
-    const tabName = `${row.id}-${temp2}`;
+    const tabName = `${row.id.slice(-4)}-${temp2}`;
 
     // Check if tab is already open
     const existingTab = openTabs.find((tab) => tab.id === tabId);
@@ -192,9 +188,7 @@ export function ResizablePanels({ token }: Props) {
           <VerticalPanels
             leftContent={
               <div className="h-full">
-                <DataTable 
-                  token={token}
-                />
+                <DataTable token={token} />
               </div>
             }
             rightContent={
@@ -217,6 +211,7 @@ export function ResizablePanels({ token }: Props) {
             rightContent={
               <div className="h-full">
                 <TabContainer
+                  token={token}
                   tabs={openTabs}
                   activeTab={activeTab}
                   onTabChange={setActiveTab}

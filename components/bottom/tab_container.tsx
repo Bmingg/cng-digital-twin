@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
-import { AddAssignmentPopup } from './add_assignment_popup'; // Import the popup component
-import { Plus, Trash } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { AddAssignmentPopup } from "./add_assignment_popup"; // Import the popup component
+import { Plus, Trash, Pencil } from "lucide-react";
 import { IconButton } from "@mui/material";
+import useSWR from "swr";
+import { httpGet$GetPlanAssignments } from "@/lib/commands/GetPlanAssignments/fetcher";
+import { CLIENT_ENV } from "@/lib/env";
+import { UpdateTimePopup } from "./update_time_popup";
+import { UpdateAssignmentProgress$Params } from "@/lib/commands/UpdateAssignmentProgress/typing";
+import { httpPatch$UpdateAssignmentProgress } from "@/lib/commands/UpdateAssignmentProgress/fetcher";
 
 // Define the types for your tab data
 interface TabData {
   id: string;
   status: string;
   date: string;
-  cngVolumeDelivered: number;
-  totalCost: number;
+  cngVolumeDelivered: number | null | undefined;
+  totalCost: number | null | undefined;
   // Add other properties as needed
 }
 
@@ -24,11 +30,13 @@ interface TabContainerProps {
   activeTab: string | undefined;
   onTabChange: (tabId: string) => void;
   onTabClose: (tabId: string) => void;
+  token: string;
 }
 
 interface TabContentProps {
   data: TabData | undefined;
   onAddAssignment: (assignmentData: any) => void;
+  token: string;
 }
 
 // Sample data structure for the table - replace with your actual data structure
@@ -53,93 +61,34 @@ const styleHover = {
   backgroundColor: "#e6ebe9",
 };
 
-// Mock data - replace with actual data fetching logic based on schedule ID
-const getOrdersForSchedule = (scheduleId: string): OrderData[] => {
-  return [
-    {
-      orderId: 15,
-      truckId: 3,
-      tankId: 5,
-      compressorId: 2,
-      status: "completed",
-      tasks: [
-        {
-          name: "Start time at truck depot",
-          estimated: "10:30",
-          actual: "11:00",
-        },
-        {
-          name: "Complete loading gas tank at tank depot",
-          estimated: "10:45",
-          actual: "11:15",
-        },
-        {
-          name: "Complete filling gas tank at compressor station",
-          estimated: "11:30",
-          actual: "12:30",
-        },
-        {
-          name: "Complete delivery to the customer",
-          estimated: "13:00",
-          actual: "13:50",
-        },
-        {
-          name: "Complete unloading gas tank at compressor station",
-          estimated: "15:00",
-          actual: "15:15",
-        },
-        {
-          name: "Returned to truck depot",
-          estimated: "15:15",
-          actual: "15:30",
-        },
-      ],
-    },
-    {
-      orderId: 16,
-      truckId: 5,
-      tankId: 2,
-      compressorId: 1,
-      status: "in progress",
-      tasks: [
-        {
-          name: "Start time at truck depot",
-          estimated: "16:00",
-          actual: "15:45",
-        },
-        {
-          name: "Complete loading gas tank at tank depot",
-          estimated: "16:15",
-          actual: null,
-        },
-        {
-          name: "Complete filling gas tank at compressor station",
-          estimated: "16:45",
-          actual: null,
-        },
-        {
-          name: "Complete delivery to the customer",
-          estimated: "17:30",
-          actual: null,
-        },
-        {
-          name: "Complete unloading gas tank at compressor station",
-          estimated: "18:30",
-          actual: null,
-        },
-        { name: "Returned to truck depot", estimated: "19:00", actual: null },
-      ],
-    },
-  ];
-};
-
-function TabContent({ data, onAddAssignment }: TabContentProps) {
+function TabContent({ data, onAddAssignment, token }: TabContentProps) {
   const [isAddPopupOpen, setIsAddPopupOpen] = useState(false);
-  
+  const [showUpdateTimePopup, setShowUpdateTimePopup] = useState(false);
+
   if (!data) return null;
-  
-  // Get orders for this schedule
-  const orders = getOrdersForSchedule(data.id);
+
+  const swr = {
+    GetPlanAssignments: useSWR(
+      [`/api/dispatch/plans/${data.id}/assignments`],
+      async () =>
+        await httpGet$GetPlanAssignments(
+          `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans/${data.id}/assignments`,
+          token
+        )
+    ),
+  };
+
+  const [open, setOpen] = useState<boolean[]>([]);
+
+  useEffect(() => {
+    if (swr.GetPlanAssignments.data) {
+      setOpen(
+        Array.from({ length: swr.GetPlanAssignments.data.length }, () => false)
+      );
+    } else {
+      setOpen([]);
+    }
+  }, [swr.GetPlanAssignments.data?.length, data]);
 
   const handleAddClick = () => {
     setIsAddPopupOpen(true);
@@ -150,43 +99,78 @@ function TabContent({ data, onAddAssignment }: TabContentProps) {
   };
 
   const handlePopupSave = (assignmentData: any) => {
-    console.log('New assignment data:', assignmentData);
+    console.log("New assignment data:", assignmentData);
     onAddAssignment(assignmentData);
     setIsAddPopupOpen(false);
   };
-  
+
+  const handleUpdateTime = async (time: string) => {
+    setShowUpdateTimePopup(false);
+    const indexOpen = open.indexOf(true);
+    if (indexOpen === -1) {
+      alert("No assignment selected!");
+    } else {
+      const id = swr.GetPlanAssignments.data?.[indexOpen].id;
+      if (!id) alert("Id not found");
+      const date = new Date();
+      if (time.length !== 5) alert("invalid input time");
+      let [hours, minutes] = time.split(":").map(Number);
+      date.setUTCHours(hours, minutes, 0);
+      await httpPatch$UpdateAssignmentProgress(
+        `${CLIENT_ENV.BACKEND_URL}/api/dispatch/assignments/${id}/progress`,
+        {
+          event_time: date.toISOString(),
+        },
+        token
+      );
+      alert("Update time successfully!");
+    }
+  };
+
   return (
     <div className="h-full overflow-auto bg-brand-F1EDEA">
       {/* Action buttons */}
       <div className="flex px-1 gap-3 border-b border-gray-200 bg-brand-BADFCD">
-        <IconButton 
-          className="flex items-center gap-1 size-sm" 
+        <IconButton
+          className="flex items-center gap-1 size-sm"
           sx={styleHover}
           onClick={handleAddClick}
         >
-          <Plus className="h-4 w-4" color="#003b2a"/>
+          <Plus className="h-4 w-4" color="#003b2a" />
+        </IconButton>
+        <IconButton
+          className="flex items-center gap-1 size-sm"
+          sx={styleHover}
+          onClick={() => setShowUpdateTimePopup(true)}
+        >
+          <Pencil className="h-4 w-4" color="#003b2a" />
         </IconButton>
         <IconButton className="flex items-center gap-1 size-sm" sx={styleHover}>
-          <Trash className="h-4 w-4" color="#003b2a"/>
+          <Trash className="h-4 w-4" color="#003b2a" />
         </IconButton>
       </div>
-
       {/* Table */}
+      {showUpdateTimePopup ? (
+        <UpdateTimePopup
+          onSubmit={handleUpdateTime}
+          onClose={() => setShowUpdateTimePopup(false)}
+        />
+      ) : undefined}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-brand-F1EDEA fontweight-bold">
               <th className="border border-gray-300 px-1 py-1 text-center">
-                Order ID
+                Order
               </th>
               <th className="border border-gray-300 px-1 py-1 text-center">
-                Truck ID
+                Truck
               </th>
               <th className="border border-gray-300 px-1 py-1 text-center">
-                Tank ID
+                Tank
               </th>
               <th className="border border-gray-300 px-1 py-1 text-center">
-                Compressor ID
+                Compressor
               </th>
               <th className="border border-gray-300 px-1 py-1 text-center">
                 Status
@@ -200,24 +184,32 @@ function TabContent({ data, onAddAssignment }: TabContentProps) {
             </tr>
           </thead>
           <tbody>
-            {orders.map((order, orderIndex) => (
-              <React.Fragment key={order.orderId}>
+            {swr.GetPlanAssignments.data?.map((order, index) => (
+              <React.Fragment key={order.order_id}>
                 {/* Order header row */}
-                <tr className="bg-brand-F1EDEA hover:bg-gray-50">
+                <tr
+                  className="bg-brand-F1EDEA hover:bg-gray-50"
+                  onDoubleClick={() => {
+                    setOpen((open) =>
+                      open.map((_, indexOpen) =>
+                        indexOpen === index ? true : false
+                      )
+                    );
+                  }}
+                >
                   <td className="border border-gray-300 px-1 py-1 text-center font-sm">
-                    {order.orderId}
+                    {order.order_id.slice(-4)}
                   </td>
                   <td className="border border-gray-300 px-1 py-1 text-center">
-                    {order.truckId}
+                    {order.truck_id}
                   </td>
                   <td className="border border-gray-300 px-1 py-1 text-center">
-                    {order.tankId}
+                    {order.tank_id}
                   </td>
                   <td className="border border-gray-300 px-1 py-1 text-center">
-                    {order.compressorId}
+                    {order.compressor_id}
                   </td>
                   <td className="border border-gray-300 px-1 py-1 text-center">
-
                     <span
                       className={`px-1 py-1 rounded text-sm font-sm ${
                         order.status === "completed"
@@ -232,34 +224,112 @@ function TabContent({ data, onAddAssignment }: TabContentProps) {
                   <td className="border border-gray-300 px-1 py-1"></td>
                 </tr>
 
-                {/* Task rows */}
-                {order.tasks.map((task, taskIndex) => (
-                  <tr
-                    key={`${order.orderId}-${taskIndex}`}
-                    className="hover:bg-gray-50"
-                  >
-                    <td className="border border-gray-300 px-1 py-1"></td>
-                    <td className="border border-gray-300 px-1 py-1"></td>
-                    <td className="border border-gray-300 px-1 py-1"></td>
-                    <td className="border border-gray-300 px-1 py-1"></td>
-                    <td className="border border-gray-300 px-1 py-1 text-right font-italic text-gray-700">
-                      {task.name}
-                    </td>
-                    <td className="border border-gray-300 px-1 py-1 text-center">
-                      {task.estimated}
-                    </td>
-                    <td className="border border-gray-300 px-1 py-1 text-center">
-                      {task.actual || "—"}
-                    </td>
-                  </tr>
-                ))}
+                {open[index] ? (
+                  <>
+                    <tr className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
+                        Start time at truck depot
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.estimated_start_time || "—"}
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.actual_end_time || "—"}
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
+                        Complete loading gas tank at tank depot
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.estimated_tank_loading_finished || "—"}
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.actual_tank_loading_finished || "—"}
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
+                        Complete filling gas tank at compressor station
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.estimated_gas_filling_finished || "—"}
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.actual_gas_filling_finished || "—"}
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
+                        Complete delivery to the customer
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.estimated_delivery_finished || "—"}
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.actual_delivery_finished || "—"}
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
+                        Complete unloading gas tank
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.estimated_tank_unloading_finished || "—"}
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.actual_tank_unloading_finished || "—"}
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1"></td>
+                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
+                        Returned to truck depot
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.estimated_end_time || "—"}
+                      </td>
+                      <td className="border border-gray-300 px-1 py-1 text-center">
+                        {order.actual_end_time || "—"}
+                      </td>
+                    </tr>
+                  </>
+                ) : undefined}
               </React.Fragment>
             ))}
           </tbody>
         </table>
       </div>
       {/* Add Assignment Popup */}
-      <AddAssignmentPopup 
+      <AddAssignmentPopup
         isOpen={isAddPopupOpen}
         onClose={handlePopupClose}
         onSave={handlePopupSave}
@@ -273,15 +343,16 @@ export function TabContainer({
   activeTab,
   onTabChange,
   onTabClose,
+  token,
 }: TabContainerProps) {
   const handleAddAssignment = (assignmentData: any) => {
     // Handle the new assignment data here
     // This could involve updating your state, making API calls, etc.
-    console.log('Assignment added to schedule:', assignmentData);
+    console.log("Assignment added to schedule:", assignmentData);
     // You might want to pass this up to the parent component
     // or handle it directly here based on your data flow
   };
-  
+
   if (tabs.length === 0) {
     return (
       <div className="flex items-center justify-center h-full bg-brand-BDC3C0 rounded-lg border-2 border-dashed border-gray-300">
@@ -334,12 +405,13 @@ export function TabContainer({
             </button>
           </div>
         ))}
-      </div>      
+      </div>
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab && activeTabData && (
-          <TabContent 
-            data={activeTabData.data} 
+          <TabContent
+            token={token}
+            data={activeTabData.data}
             onAddAssignment={handleAddAssignment}
           />
         )}
@@ -347,4 +419,3 @@ export function TabContainer({
     </div>
   );
 }
-
