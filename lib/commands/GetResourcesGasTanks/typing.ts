@@ -12,7 +12,7 @@ export type GetResourcesGasTanks$Params = z.infer<
 
 export const GetResourcesGasTanks$Result = z
   .object({
-    id: z.string(),
+    id: z.number(),
     gas_tank_type_id: z.string(),
     status: z.string(),
     station_id: z.string(),
@@ -27,13 +27,13 @@ export const GetResourcesGasTanks$Result = z
     station: z.object({
       id: z.string(),
       address: z.string(),
-      latitude: z.number(),
-      longtitude: z.number(),
+      latitude: z.number().optional(),
+      longtitude: z.number().optional(),
       gps_coordinates: z.object({
-        latitude: z.number(),
-        longtitude: z.number(),
-      }),
-    }),
+        latitude: z.number().optional(),
+        longtitude: z.number().optional(),
+      }).optional(),
+    }).optional(),
   })
   .array();
 export type GetResourcesGasTanks$Result = z.infer<

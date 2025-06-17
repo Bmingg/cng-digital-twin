@@ -12,7 +12,7 @@ export type GetResourcesCompressors$Params = z.infer<
 
 export const GetResourcesCompressors$Result = z
   .object({
-    id: z.string(),
+    id: z.number(),
     compressor_type_id: z.string(),
     compressor_station_id: z.string(),
     status: z.string(),
@@ -31,8 +31,8 @@ export const GetResourcesCompressors$Result = z
       gps_coordinates: z.object({
         latitude: z.number(),
         longitude: z.number(),
-      }),
-    }),
+      }).optional(),
+    }).optional(),
   })
   .array();
 export type GetResourcesCompressors$Result = z.infer<

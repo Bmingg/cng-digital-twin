@@ -1,5 +1,6 @@
 "use client";
 
+import { z } from "zod";
 import { httpGet$GetResourcesTruckTypes } from "@/lib/commands/GetResourcesTruckTypes/fetcher";
 import { httpGet$GetResourcesGasTankTypes } from "@/lib/commands/GetResourcesGasTankTypes/fetcher";
 import { httpGet$GGetResourcesCompressors } from "@/lib/commands/GetResourcesCompressors/fetcher";
@@ -17,6 +18,15 @@ import useSWR from "swr";
 import { TopLeftBar } from "./top_left_bar";
 import { httpDelete$DeleteResources } from "@/lib/commands/DeleteResources/fetcher";
 import { AddDataPopup } from './add_popup';
+import { httpPost$CreateTruckTypes } from "@/lib/commands/CreateTruckTypes/fetcher";
+import { httpPost$CreateOrders } from "@/lib/commands/CreateOrders/fetcher";
+import { httpPost$CreateGasTankTypes } from "@/lib/commands/CreateGasTankTypes/fetcher";
+import { httpPost$CreateGasTanks } from "@/lib/commands/CreateGasTanks/fetcher";
+import { httpPost$CreateTrucks } from "@/lib/commands/CreateTrucks/fetcher";
+import { httpPost$CreateCompressorTypes } from "@/lib/commands/CreateCompressorTypes/fetcher";
+import { httpPost$CreateCompressors } from "@/lib/commands/CreateCompressors/fetcher";
+import { httpPost$CreateCompressionStations } from "@/lib/commands/CreateCompressionStations/fetcher";
+import { httpPost$CreateCustomers } from "@/lib/commands/CreateCustomers/fetcher";
 
 type Props = {
   token: string;
@@ -26,30 +36,133 @@ export function DataTable({ token }: Props) {
   const [selectedOption, setSelectedOption] = React.useState("");
   const [searchValue, setSearchValue] = React.useState("");
   const [selectedRow, setSelectedRow] = React.useState<string | undefined>();
-
   const [isAddPopupOpen, setIsAddPopupOpen] = React.useState(false);
   
+  const handleEdit = () => {
+    if (!selectedRow) return;
+    console.log('Edit row:', selectedRow);
+    // Implement edit functionality here
+  }
+
   const handleAdd = () => {
-    console.log('Add button clicked from parent');
-    // Implement add logic here
-    console.log('isAddPopupOpen before:', isAddPopupOpen);
+    if (!selectedOption) return;
     setIsAddPopupOpen(true);
-    console.log('isAddPopupOpen after:', true);
   };
 
   const handleClosePopup = () => {
     setIsAddPopupOpen(false);
   };
 
-  const handleSaveData = (data: any) => {
-    // Save the data from the popup add in top-left data table
-    // Don't know how to do this yet, just logging for now
+  const handleSaveData = async (data: any) => {
+    if (!selectedOption) return;
+    
     console.log('Saved data:', data);
-    setIsAddPopupOpen(false);
-  }
+    if (selectedOption === "truckTypes") {
+      await httpPost$CreateTruckTypes(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types/`,
+        data,
+        token
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesTruckTypes.mutate(); // Refresh the truck types data
+    }
+    if (selectedOption === "orders") {
+      // Handle saving orders
+      await httpPost$CreateOrders(
+        `${CLIENT_ENV.BACKEND_URL}/api/orders/`,
+        data,
+        token
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesAllOrders.mutate(); // Refresh the orders data
+    }
+    if (selectedOption === "gasTankTypes") {
+      // Handle saving gas tank types
+      console.log('It goes here', data);
+      await httpPost$CreateGasTankTypes(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types/`,
+        data,
+        token
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesGasTankTypes.mutate(); // Refresh the gas tank types data
+    }
+    if (selectedOption === "gasTanks") {
+      // Handle saving gas tanks
+      await httpPost$CreateGasTanks(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks/`,
+        data,
+        token
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesGasTanks.mutate(); // Refresh the gas tanks data
+    }
+    if (selectedOption === "trucks") {
+      // Handle saving trucks
+      await httpPost$CreateTrucks(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks/`,
+        data,
+        token
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesTrucks.mutate(); // Refresh the trucks data
+    }
+    if (selectedOption === "compressorTypes") {
+      await httpPost$CreateCompressorTypes(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types/`,
+        data,
+        token
+      );
+      setIsAddPopupOpen(false); 
+      swr.GetResourcesCompressorTypes.mutate(); // Refresh the compressor types data
+    }
+    if (selectedOption === "compressors") {
+      // Handle saving compressors
 
+      await httpPost$CreateCompressors(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors/`,
+        data,
+        token
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesCompressors.mutate(); // Refresh the compressors data
+    }
+    if (selectedOption === "compressionStations") {
+      // Handle saving compressor stations
+      const transformDataFormat = (data: any) => {
+        const { latitude, longitude, ...rest } = data;
+        return {
+          ...rest,
+          gps_coordinates: {
+            latitude,
+            longitude
+          }
+        };
+      };
+      const transformedData = transformDataFormat(data);
+      console.log('Transformed data:', transformedData);
+
+      await httpPost$CreateCompressionStations(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/compression-stations/`,
+        transformedData,
+        token
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesCompressionStations.mutate(); // Refresh the compression stations data
+    }
+    if (selectedOption === "customers") {
+      // Handle saving customers
+      await httpPost$CreateCustomers(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/customers/`,
+        data,
+        token
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesCustomers.mutate(); // Refresh the customers data
+    }
+  }
   const swr = {
-    GetResourcesTructTypes: useSWR(
+    GetResourcesTruckTypes: useSWR(
       ["/api/resources/truck-types/"],
       async () =>
         await httpGet$GetResourcesTruckTypes(
@@ -164,56 +277,74 @@ export function DataTable({ token }: Props) {
     if (selectedOption === "truckTypes") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types`,
-        { id: selectedRow }
+        { id: selectedRow },
+        token,
       );
+      swr.GetResourcesTruckTypes.mutate(); // Refresh the truck types data
     }
     if (selectedOption === "orders") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/orders`,
-        { id: selectedRow }
+        { id: selectedRow },
+        token,
       );
+      swr.GetResourcesAllOrders.mutate(); // Refresh the orders data
     }
     if (selectedOption === "gasTankTypes") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types`,
-        { id: selectedRow }
+        { id: selectedRow },
+        token,
       );
+      swr.GetResourcesGasTankTypes.mutate(); // Refresh the gas tank types data
     }
     if (selectedOption === "gasTank") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks`,
-        { id: selectedRow }
+        { id: selectedRow },
+        token,
       );
+      swr.GetResourcesGasTanks.mutate(); // Refresh the gas tanks data
     }
     if (selectedOption === "trucks") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks`,
-        { id: selectedRow }
+        { id: selectedRow },
+        token,
       );
+      swr.GetResourcesTrucks.mutate(); // Refresh the trucks data
     }
     if (selectedOption === "compressorTypes") { 
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types`,
-        { id: selectedRow }
+        { id: selectedRow },
+        token,
       );
+      swr.GetResourcesCompressorTypes.mutate(); // Refresh the compressor types data
     }
     if (selectedOption === "compressors") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors`,
-        { id: selectedRow }
+        { id: selectedRow },
+        token,
       );
+      swr.GetResourcesCompressors.mutate(); // Refresh the compressors data
     }
-    if (selectedOption === "compressorStations") {
+    if (selectedOption === "compressionStations") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-stations`,
-        { id: selectedRow }
+        { id: selectedRow },
+        token,
       );
+      swr.GetResourcesCompressionStations.mutate(); // Refresh the compression stations data
     }
     if (selectedOption === "customers") {
       await httpDelete$DeleteResources(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/customers`,
-        { id: selectedRow }
+        { id: selectedRow },
+        token,
       );
+      swr.GetResourcesCustomers.mutate(); // Refresh the customers data
     }
   };
 
@@ -237,7 +368,7 @@ export function DataTable({ token }: Props) {
             { key: "owned", label: "Ownership" },
             { key: "rental_cost_by_hour", label: "Rental Cost per Hour" },
           ],
-          data: swr.GetResourcesTructTypes.data ?? [],
+          data: swr.GetResourcesTruckTypes.data ?? [],
         };
       case "gasTankTypes":
         return {
@@ -253,7 +384,10 @@ export function DataTable({ token }: Props) {
         };
       
       case "gasTanks":
-        const modifiedGasTankData = swr.GetResourcesGasTanks.data.map(({ gas_tank_type, station, ...rest }) => rest);
+        const gasTanksData  = swr.GetResourcesGasTanks.data;
+        const modifiedGasTankData = gasTanksData 
+          ? gasTanksData.map(({ gas_tank_type, station, ...rest }) => rest)
+          : [];
         return {
           columns: [
             { key: "id", label: "ID" },
@@ -265,8 +399,10 @@ export function DataTable({ token }: Props) {
           // data: swr.GetResourcesGasTanks.data ?? [],
         };
       case "trucks":
-        const modifiedTruckData = swr.GetResourcesTrucks.data.map(({ truck_type, station, ...rest }) => rest);
-        // const modifiedTruckData = swr.GetResourcesTrucks.data;
+        const trucksData = swr.GetResourcesTrucks.data;
+        const modifiedTruckData = trucksData 
+          ? trucksData.map(({ truck_type, station, ...rest }) => rest)
+          : [];
         return {
           columns: [
             { key: "id", label: "ID" },
@@ -287,20 +423,27 @@ export function DataTable({ token }: Props) {
           ],
           data: swr.GetResourcesCompressorTypes.data ?? [],
         };
-      case "compressors":
-        const modifiedCompressorsData = swr.GetResourcesCompressors.data.map(({ compressor_type, compressor_station, ...rest }) => rest);
+      case "compressors": 
+        const compressorsData = swr.GetResourcesCompressors.data;
+        const modifiedCompressorsData = compressorsData 
+          ? compressorsData.map(({ compressor_type, compressor_station, ...rest }) => rest)
+          : [];
         return {
           columns: [
             { key: "id", label: "ID" },
             { key: "compressor_type_id", label: "Compressor Type ID" },
             { key: "status", label: "Status" },
-            { key: "station_id", label: "Station ID" },
+            { key: "compressor_station_id", label: "Compressor Station ID" },
           ],
           data: modifiedCompressorsData ?? [],
           // data: swr.GetResourcesCompressors.data ?? [],
         };
       case "compressionStations":
-        const modifiedCompressionStationsData = swr.GetResourcesCompressionStations.data.map(({ gps_coordinates, ...rest }) => rest);
+        const compressionStationsData = swr.GetResourcesCompressionStations.data;
+        const modifiedCompressionStationsData = compressionStationsData
+          ? compressionStationsData.map(({ gps_coordinates, ...rest }) => rest)
+          : [];
+        // const modifiedCompressionStationsData = swr.GetResourcesCompressionStations.data.map(({ gps_coordinates, ...rest }) => rest);
         return {
           columns: [
             { key: "id", label: "ID" },
@@ -313,27 +456,30 @@ export function DataTable({ token }: Props) {
           // data: swr.GetResourcesCompressionStations.data ?? [],
         };
       case "customers":
-        const modifiedCustomersData = swr.GetResourcesCustomers.data.map(({ gps_coordinates, ...rest }) => rest);
+        const customersData = swr.GetResourcesCustomers.data;
+        const modifiedCustomersData = customersData
+          ? customersData.map(({ gps_coordinates, ...rest }) => rest)
+          : [];
         return {
           columns: [
+            { key: "id", label: "ID" },
             { key: "name", label: "Name" },
             { key: "address", label: "Address" },
             { key: "contact_info", label: "Contact Info" },
-            { key: "id", label: "ID" },
-            { key: "longtitude", label: "Longitude" },
+            { key: "longitude", label: "Longitude" },
             { key: "latitude", label: "Latitude" },
           ],
-          data: modifiedCustomersData ?? [],
           // data: swr.GetResourcesCustomers.data ?? [],
+          data: modifiedCustomersData ?? [],
         };
       case "orders":
         return {
           columns: [
             { key: "id", label: "ID" },
-            { key: "customerId", label: "Customer ID" },
-            { key: "requiredVolume", label: "Required Volume" },
-            { key: "deliveryTime", label: "Delivery Time" },
-            { key: "priorityLevel", label: "Priority Level" },
+            { key: "customer_id", label: "Customer ID" },
+            { key: "required_volume", label: "Required Volume" },
+            { key: "delivery_time", label: "Delivery Time" },
+            { key: "priority_level", label: "Priority Level" },
             { key: "status", label: "Status" },
           ],
           data:  swr.GetResourcesAllOrders.data ?? [],
@@ -369,6 +515,13 @@ export function DataTable({ token }: Props) {
     switch (columnKey) {
       // case 'status':
       //   return getStatusBadge(value);
+      case "rental_cost_by_hour":
+        return value.toLocaleString()
+      // Round longitude and latitude to 6 decimal places
+      case "longitude":
+        return parseFloat(value).toFixed(5);
+      case "latitude":
+        return parseFloat(value).toFixed(5);
       default:
         return value;
     }
@@ -381,6 +534,7 @@ export function DataTable({ token }: Props) {
           onDropdownChange={handleDropdownChange}
           onAdd={handleAdd}
           onDelete={handleDelete}
+          onEdit={handleEdit}
           onFilter={handleFilter}
           onSearch={handleSearch}
           searchValue={searchValue}
@@ -401,6 +555,7 @@ export function DataTable({ token }: Props) {
           onDropdownChange={handleDropdownChange}
           onAdd={handleAdd}
           onDelete={handleDelete}
+          onEdit={handleEdit}
           onFilter={handleFilter}
           onSearch={handleSearch}
           searchValue={searchValue}
@@ -426,6 +581,7 @@ export function DataTable({ token }: Props) {
         onDropdownChange={handleDropdownChange}
         onAdd={handleAdd}
         onDelete={handleDelete}
+        onEdit={handleEdit}
         onFilter={handleFilter}
         onSearch={handleSearch}
         searchValue={searchValue}
