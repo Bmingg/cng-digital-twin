@@ -10,12 +10,12 @@ export type GetResourcesCustomers$Params = z.infer<
 
 export const GetResourcesCustomers$Result = z
   .object({
+    id: z.number(),
     name: z.string(),
     address: z.string(),
     contact_info: z.string(),
-    id: z.number(),
-    longtitude: z.number(),
-    latitude: z.number(),
+    longitude: z.number().optional(),
+    latitude: z.number().optional(),
     gps_coordinates: z.object({
       latitude: z.number(),
       longitude: z.number(),
