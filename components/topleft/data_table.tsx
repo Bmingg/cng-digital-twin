@@ -64,6 +64,7 @@ export function DataTable({ token }: Props) {
         token
       );
       setIsAddPopupOpen(false);
+      swr.GetResourcesTruckTypes.mutate(); // Refresh the truck types data
     }
     if (selectedOption === "orders") {
       // Handle saving orders
@@ -73,6 +74,7 @@ export function DataTable({ token }: Props) {
         token
       );
       setIsAddPopupOpen(false);
+      swr.GetResourcesAllOrders.mutate(); // Refresh the orders data
     }
     if (selectedOption === "gasTankTypes") {
       // Handle saving gas tank types
@@ -83,7 +85,7 @@ export function DataTable({ token }: Props) {
         token
       );
       setIsAddPopupOpen(false);
-      console.log('Gas tank types saved successfully');
+      swr.GetResourcesGasTankTypes.mutate(); // Refresh the gas tank types data
     }
     if (selectedOption === "gasTanks") {
       // Handle saving gas tanks
@@ -93,6 +95,7 @@ export function DataTable({ token }: Props) {
         token
       );
       setIsAddPopupOpen(false);
+      swr.GetResourcesGasTanks.mutate(); // Refresh the gas tanks data
     }
     if (selectedOption === "trucks") {
       // Handle saving trucks
@@ -102,6 +105,7 @@ export function DataTable({ token }: Props) {
         token
       );
       setIsAddPopupOpen(false);
+      swr.GetResourcesTrucks.mutate(); // Refresh the trucks data
     }
     if (selectedOption === "compressorTypes") {
       await httpPost$CreateCompressorTypes(
@@ -110,6 +114,7 @@ export function DataTable({ token }: Props) {
         token
       );
       setIsAddPopupOpen(false); 
+      swr.GetResourcesCompressorTypes.mutate(); // Refresh the compressor types data
     }
     if (selectedOption === "compressors") {
       // Handle saving compressors
@@ -120,6 +125,7 @@ export function DataTable({ token }: Props) {
         token
       );
       setIsAddPopupOpen(false);
+      swr.GetResourcesCompressors.mutate(); // Refresh the compressors data
     }
     if (selectedOption === "compressionStations") {
       // Handle saving compressor stations
@@ -142,6 +148,7 @@ export function DataTable({ token }: Props) {
         token
       );
       setIsAddPopupOpen(false);
+      swr.GetResourcesCompressionStations.mutate(); // Refresh the compression stations data
     }
     if (selectedOption === "customers") {
       // Handle saving customers
@@ -151,10 +158,11 @@ export function DataTable({ token }: Props) {
         token
       );
       setIsAddPopupOpen(false);
+      swr.GetResourcesCustomers.mutate(); // Refresh the customers data
     }
   }
   const swr = {
-    GetResourcesTructTypes: useSWR(
+    GetResourcesTruckTypes: useSWR(
       ["/api/resources/truck-types/"],
       async () =>
         await httpGet$GetResourcesTruckTypes(
@@ -272,6 +280,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      swr.GetResourcesTruckTypes.mutate(); // Refresh the truck types data
     }
     if (selectedOption === "orders") {
       await httpDelete$DeleteResources(
@@ -279,6 +288,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      swr.GetResourcesAllOrders.mutate(); // Refresh the orders data
     }
     if (selectedOption === "gasTankTypes") {
       await httpDelete$DeleteResources(
@@ -286,6 +296,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      swr.GetResourcesGasTankTypes.mutate(); // Refresh the gas tank types data
     }
     if (selectedOption === "gasTank") {
       await httpDelete$DeleteResources(
@@ -293,6 +304,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      swr.GetResourcesGasTanks.mutate(); // Refresh the gas tanks data
     }
     if (selectedOption === "trucks") {
       await httpDelete$DeleteResources(
@@ -300,6 +312,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      swr.GetResourcesTrucks.mutate(); // Refresh the trucks data
     }
     if (selectedOption === "compressorTypes") { 
       await httpDelete$DeleteResources(
@@ -307,6 +320,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      swr.GetResourcesCompressorTypes.mutate(); // Refresh the compressor types data
     }
     if (selectedOption === "compressors") {
       await httpDelete$DeleteResources(
@@ -314,6 +328,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      swr.GetResourcesCompressors.mutate(); // Refresh the compressors data
     }
     if (selectedOption === "compressionStations") {
       await httpDelete$DeleteResources(
@@ -321,6 +336,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      swr.GetResourcesCompressionStations.mutate(); // Refresh the compression stations data
     }
     if (selectedOption === "customers") {
       await httpDelete$DeleteResources(
@@ -328,6 +344,7 @@ export function DataTable({ token }: Props) {
         { id: selectedRow },
         token,
       );
+      swr.GetResourcesCustomers.mutate(); // Refresh the customers data
     }
   };
 
@@ -351,7 +368,7 @@ export function DataTable({ token }: Props) {
             { key: "owned", label: "Ownership" },
             { key: "rental_cost_by_hour", label: "Rental Cost per Hour" },
           ],
-          data: swr.GetResourcesTructTypes.data ?? [],
+          data: swr.GetResourcesTruckTypes.data ?? [],
         };
       case "gasTankTypes":
         return {

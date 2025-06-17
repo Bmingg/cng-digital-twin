@@ -191,7 +191,7 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption }: any) => {
                 if (fieldKey === "owned" ) {
                   // Special case for status, render a select input
                   isDropdown = true;
-                  dropdownOptions = ['Owned', 'Leased'];
+                  dropdownOptions = ['Owned', 'Rented'];
                   placeholder = 'Select status';
                 };
 
