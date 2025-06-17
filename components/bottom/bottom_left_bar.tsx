@@ -80,31 +80,6 @@ export function BottomLeftBar({
             />
           </FormControl>
         </Box>
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            borderRadius: "10px",
-            backgroundColor: "#e6ebe9",
-          }}
-        >
-          <Button
-            onClick={() => {}}
-            className="flex items-center gap-1"
-            sx={styleHover2}
-          >
-            {/* Insert an svg of an icon here */}
-            <Image
-              src="/images/compare.svg"
-              alt="Compare icon"
-              width={0}
-              height={0}
-              sizes="100vw"
-              style={{ width: "100%", height: "auto" }} // optional
-            />
-            <span className="text-black text-sm">Compare</span>
-          </Button>
-        </Box>
         <IconButton
           onClick={onAddSchedule}
           className="flex items-center gap-1"

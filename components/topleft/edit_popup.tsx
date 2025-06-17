@@ -1,5 +1,4 @@
-"use client";
-
+'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { httpGet$GetResourcesTruckTypes } from "@/lib/commands/GetResourcesTruckTypes/fetcher";
 import { httpGet$GetResourcesGasTankTypes } from "@/lib/commands/GetResourcesGasTankTypes/fetcher";
@@ -16,27 +15,9 @@ import useSWR from "swr";
 import { httpGet$GetResourcesStations } from '@/lib/commands/GetResourcesStations/fetcher';
 
 
-type Props = {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (data: any) => void;
-  selectedOption: Attributes;
-  token: string;
-};
-
-type Attributes =
-  | "truckTypes"
-  | "trucks"
-  | "gasTankTypes"
-  | "gasTanks"
-  | "compressorTypes"
-  | "compressors"
-  | "compressionStations"
-  | "customers"
-  | "orders";
-
-const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) => {
-  const [formData, setFormData] = useState<Record<string, number | string>>({});
+const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selectedRow }: any) => {
+  const [formData, setFormData] = useState({});
+  const [isFormInitialized, setIsFormInitialized] = useState(false);
 
   const swr = {
     GetResourcesTruckTypes: useSWR(
@@ -167,7 +148,6 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
     ],
     trucks: [
       { key: "id", label: "ID" },
-      { key: "truck_type_id", label: "Truck Type ID" },
       { key: "status", label: "Status" },
       { key: "station_id", label: "Station ID" },
     ],
@@ -181,8 +161,7 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
     ],
     gasTanks: [
       { key: "id", label: "ID" },
-      { key: "gas_tank_type_id", label: "Gas Tank Type ID" },
-      { key: "status", label: "Status" },
+      { key: "status", label: "Status" }, 
       { key: "station_id", label: "Station ID" },
     ],
     compressorTypes: [
@@ -193,7 +172,6 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
     ],
     compressors: [
       { key: "id", label: "ID" },
-      { key: "compressor_type_id", label: "Compressor Type ID" },
       { key: "status", label: "Status" },
       { key: "compressor_station_id", label: "Compressor Station ID" },
     ],
@@ -213,10 +191,11 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
       { key: "latitude", label: "Latitude" },
     ],
     orders: [
-      { key: "customer_id", label: "Customer ID" },
+      { key: "id", label: "ID" },
       { key: "required_volume", label: "Required Volume" },
       { key: "delivery_time", label: "Delivery Time" },
       { key: "priority_level", label: "Priority Level" },
+      { key: "status", label: "Status" },
     ],
     stations: [
       { key: "id", label: "ID" },
@@ -233,20 +212,61 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
 
   // Reset form data when selectedOption changes or popup opens
   useEffect(() => {
-    if (isOpen) {
-      const initialFormData: Record<string, string> = {};
-      currentAttributes.forEach((attribute) => {
-        // Use the key directly from the attribute object
-        initialFormData[attribute.key] = "";
-      });
-      setFormData(initialFormData);
+  //   if (isOpen) {
+  //     const initialFormData = {};
+  //     currentAttributes.forEach(attribute => {
+  //       // Use the key directly from the attribute object
+  //       initialFormData[attribute.key] = '';
+  //     });
+  //     setFormData(initialFormData);
+  //   }
+  // }, [isOpen, selectedOption, currentAttributes]);
+    if (selectedRow && swr && isOpen && !isFormInitialized) {
+      // Find the complete row data based on the selectedRow ID
+      let rowData = null;
+      
+      if (selectedOption === "orders") {
+        rowData = swr.GetResourcesAllOrders?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "customers") {
+        rowData = swr.GetResourcesCustomers?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "gasTanks") {
+        rowData = swr.GetResourcesGasTanks?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "trucks") {
+        rowData = swr.GetResourcesTrucks?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "compressors") {
+        rowData = swr.GetResourcesCompressors?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "compressionStations") {
+        rowData = swr.GetResourcesCompressionStations?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "gasTankTypes") {
+        rowData = swr.GetResourcesGasTankTypes?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "truckTypes") {
+        rowData = swr.GetResourcesTruckTypes?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "compressorTypes") {
+        rowData = swr.GetResourcesCompressorTypes?.data?.find(item => item.id === selectedRow);
+      } else if (selectedOption === "stations") {
+        rowData = swr.GetResourcesStations?.data?.find(item => item.id === selectedRow);
+      }
+      // If rowData is found, set the formData with the existing values
+      // This assumes that the rowData has the same keys as the attributes
+      // Add other resource types as needed
+      
+      if (rowData) {
+        setFormData(rowData);
+        setIsFormInitialized(true);
+      }
     }
-  }, [isOpen, selectedOption, currentAttributes]);
+  }, [selectedRow, selectedOption, swr, isFormInitialized, isOpen]);
+  
+  useEffect(() => {
+    setIsFormInitialized(false);
+  }, [selectedRow]);
 
-  const handleInputChange = (field: string, value: string | number) => {
-    setFormData((prev) => ({
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
       ...prev,
-      [field]: value,
+      // Use the key directly from the attribute object
+      ["id"]: selectedRow,
+      [field]: value
     }));
   };
 
@@ -261,9 +281,11 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
   const handleCancel = () => {
     // Reset form
     setFormData({});
-    console.log("Popup cancelled");
+    console.log('Popup cancelled');
+    setIsFormInitialized(false);
     if (onClose) {
       onClose();
+      setIsFormInitialized(false);
     }
   };
 
@@ -273,6 +295,7 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-brand-BADFCD rounded-2xl shadow-2xl w-full max-w-2xl mx-4">
+        
         {/* Main Content */}
         <div className="p-4 pb-0">
           <div className="grid grid-cols-2">
@@ -281,24 +304,18 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
               {currentAttributes.map((attribute, index) => {
                 const isFirst = index === 0;
                 const isLast = index === currentAttributes.length - 1;
-
+                
                 return (
                   <div
                     key={index}
                     className={`h-12 p-4 bg-brand-F1EDEA border-black border-solid border flex items-center justify-center
-                      ${
-                        isFirst
-                          ? "border-t border-l border-r rounded-tl-lg"
-                          : "border-l border-r"
-                      }
-                      ${isLast ? "border-b rounded-bl-lg border-t-0" : ""}
-                      ${!isFirst && !isLast ? "border-t-0" : ""}
+                      ${isFirst ? 'border-t border-l border-r rounded-tl-lg' : 'border-l border-r'}
+                      ${isLast ? 'border-b rounded-bl-lg border-t-0': ''}
+                      ${!isFirst && !isLast ? 'border-t-0' : ''}
                     `}
                   >
                     {/* Use the label property to display the human-readable text */}
-                    <span className="font-bold text-lg text-gray-800">
-                      {attribute.label}
-                    </span>
+                    <span className="font-bold text-lg text-gray-800">{attribute.label}</span>
                   </div>
                 );
               })}
@@ -311,71 +328,44 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
                 const isLast = index === currentAttributes.length - 1;
                 // Use the key directly from the attribute object
                 const fieldKey = attribute.key;
-
-                let inputType = "text";
+                
+                let inputType = 'text';
                 let placeholder = `Enter ${attribute.label.toLowerCase()}`;
                 let isDropdown = false;
-                let dropdownOptions: string[] = [];
+                let dropdownOptions: any[] = [];
+                let isReadonly = false;
 
-
-                if (fieldKey === "id" && selectedOption === "customers") {
-                  // Special case for ID, render a text input
-                  inputType = "number";
+                if (fieldKey === "id") {
+                  placeholder = selectedRow;
+                  isReadonly = true;
                 }
-                if (
-                  (fieldKey === "id" && selectedOption === "compressors") ||
-                  selectedOption === "trucks" ||
-                  selectedOption === "gasTanks"
-                ) {
-                  // Special case for ID, render a text input
-                  inputType = 'number';
-                };
+
                 if (fieldKey === "loading_time") {
                   // Special case for loading_time, render a number input 
                   inputType = 'number';
                 };
-        
-                if (fieldKey === "status" && selectedOption === "orders") {
+                if (fieldKey === "status" && selectedOption === 'orders') {
                   // Special case for status, render a select input
                   isDropdown = true;
-                  dropdownOptions = [
-                    "PENDING",
-                    "IN_PROGRESS",
-                    "ASSIGNED",
-                    "COMPLETED",
-                    "CANCELLED",
-                  ];
-                  placeholder = "Select status";
-                }
-        
-                if (fieldKey === "status" && selectedOption !== "orders") {
+                  dropdownOptions = ['PENDING', 'IN_PROGRESS', 'ASSIGNED', 'COMPLETED', 'CANCELLED'];
+                  placeholder = 'Select status';
+                };
+                if (fieldKey === "status" && selectedOption !== 'orders') {
                   // Special case for status, render a select input
                   isDropdown = true;
-                  dropdownOptions = [
-                    "AVAILABLE",
-                    "IN_USE",
-                    "MAINTENANCE",
-                    "OUT_OF_SERVICE",
-                  ];
-                  placeholder = "Select status";
-                }
-        
+                  dropdownOptions = ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'OUT_OF_SERVICE'];
+                  placeholder = 'Select status';
+                };
                 if (fieldKey === "owned" ) {
                   // Special case for status, render a select input
                   isDropdown = true;
                   dropdownOptions = ['Owned', 'Rented'];
                   placeholder = 'Select status';
                 };
-        
-                if (
-                  fieldKey === "number_of_compressors" ||
-                  fieldKey === "count" ||
-                  fieldKey === "capacity" ||
-                  fieldKey === "capacity_m3"
-                ) {
+                if (fieldKey === "number_of_compressors" || fieldKey === "count" || fieldKey === "capacity" || fieldKey === "capacity_m3") {
                   // Special case for count and capacity, render a number input
-                  inputType = "number";
-                }
+                  inputType = 'number';
+                };
 
                 if (selectedOption === "orders" && fieldKey === "customer_id") {
                   // Special case for customer_id, render a select input
@@ -452,53 +442,39 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
                   placeholder = 'Select Compressor Station';
                 };
 
-
                 return (
                   <div key={index} className="h-12">
                     {isDropdown ? (
                       <select
-                        value={formData[fieldKey] || ""}
-                        onChange={(e) =>
-                          handleInputChange(fieldKey, e.target.value)
-                        }
+                        value={formData[fieldKey] || ''}
+                        onChange={(e) => handleInputChange(fieldKey, e.target.value)}
+                        disabled={isReadonly}
                         className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
-                          ${
-                            isFirst
-                              ? "border-t border-l border-r rounded-tr-lg"
-                              : "border-r"
-                          }
-                          ${isLast ? "border-b rounded-br-lg border-t-0" : ""}
-                          ${!isFirst && !isLast ? "border-t-0" : ""}
+                          ${isFirst ? 'border-t border-l border-r rounded-tr-lg' : 'border-r'}
+                          ${isLast ? 'border-b rounded-br-lg border-t-0' : ''}
+                          ${!isFirst && !isLast ? 'border-t-0' : ''}
                         `}
                       >
-                        <option value="" disabled>
-                          {placeholder}
-                        </option>
+                        <option value="" disabled>{placeholder}</option>
                         {dropdownOptions.map((option, idx) => (
-                          <option key={idx} value={option}>
-                            {option}
-                          </option>
+                          <option key={idx} value={option}>{option}</option>
                         ))}
                       </select>
                     ) : (
-                      <input
-                        type={inputType}
-                        placeholder={placeholder}
-                        value={formData[fieldKey] || ""}
-                        onChange={(e) =>
-                          handleInputChange(fieldKey, e.target.value)
-                        }
-                        className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
-                        ${
-                          isFirst
-                            ? "border-t border-l border-r rounded-tr-lg"
-                            : "border-r"
-                        }
-                        ${isLast ? "border-b rounded-br-lg border-t-0" : ""}
-                        ${!isFirst && !isLast ? "border-t-0" : ""}
+                    <input
+                      type={inputType}
+                      placeholder={placeholder}
+                      readOnly={isReadonly}
+                      value={formData[fieldKey] || ''}
+                      onChange={(e) => handleInputChange(fieldKey, e.target.value)}
+                      className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
+                        ${isFirst ? 'border-t border-l border-r rounded-tr-lg' : 'border-r'}
+                        ${isLast ? 'border-b rounded-br-lg border-t-0' : ''}
+                        ${!isFirst && !isLast ? 'border-t-0' : ''}
+                        ${isReadonly ? 'bg-gray-50 font-bold cursor-not-allowed' : ''}
                       `}
-                      />
-                    )}
+                    />
+                      )}
                   </div>
                 );
               })}
@@ -526,4 +502,4 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: any) =
   );
 };
 
-export { AddDataPopup };
+export { EditDataPopup };

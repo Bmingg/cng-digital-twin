@@ -167,7 +167,7 @@ export function ResizablePanels({ token }: Props) {
   ];
 
   const handleRowDoubleClick = (row: TableConfig["data"][0]) => {
-    const tabId = `${row.id}`;
+    const tabId = row.id;
     const temp = row.date;
     const temp2 = temp.substring(0, row.date.length - 5);
     const tabName = `${row.id.slice(-4)}-${temp2}`;
