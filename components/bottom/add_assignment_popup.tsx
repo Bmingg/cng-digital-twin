@@ -7,8 +7,8 @@ type Props = {
   onSave: () => void;
 };
 
-const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
-  const [formData, setFormData] = useState({});
+const AddAssignmentPopup = ({ isOpen, onClose, onSave }: Props) => {
+  const [formData, setFormData] = useState<Record<string, string | number>>({});
 
   // Fixed attribute set for assignment window
   const assignmentAttributes = [
@@ -16,15 +16,13 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
     "Truck ID",
     "Tank ID",
     "Compressor ID",
-    "Status",
     "Estimated",
-    "Actual",
   ];
 
   // Reset form data when popup opens
   useEffect(() => {
     if (isOpen) {
-      const initialFormData = {};
+      let initialFormData: Record<string, string> = {};
       assignmentAttributes.forEach((attribute) => {
         const fieldKey = attribute
           .toLowerCase()
@@ -36,7 +34,7 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
     }
   }, [isOpen]);
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -45,7 +43,7 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
 
   const handleSave = () => {
     if (onSave) {
-      onSave(formData);
+      onSave();
     }
     // Reset form
     setFormData({});
@@ -110,7 +108,7 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
                 let inputType = "text";
                 let placeholder = `Enter ${attribute.toLowerCase()}`;
                 let isDropdown = false;
-                let dropdownOptions = [];
+                let dropdownOptions: any[] = [];
 
                 if (attribute === "Status") {
                   isDropdown = true;
@@ -122,8 +120,13 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
                 ) {
                   inputType = "time";
                   placeholder = "";
-                } else if (attribute.includes("ID")) {
+                } else if (
+                  attribute === "Truck ID" ||
+                  attribute === "Tank ID"
+                ) {
                   inputType = "number";
+                } else {
+                  inputType = "string";
                 }
 
                 return (

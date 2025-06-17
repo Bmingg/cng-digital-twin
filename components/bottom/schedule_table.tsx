@@ -8,6 +8,8 @@ import { httpDelete$DeleteResources } from "@/lib/commands/DeleteResources/fetch
 import { httpGet$GetDispatchPlans } from "@/lib/commands/GetDispatchPlans/fetcher";
 import { CLIENT_ENV } from "@/lib/env";
 import useSWR from "swr";
+import { CreateDispatchPlan$Params } from "@/lib/commands/CreateDispatchPlan/typing";
+import { httpPost$CreateDispatchPlan } from "@/lib/commands/CreateDispatchPlan/fetcher";
 
 // Since there's no real data yet, by default we presume the data are always stored yesterday
 const getYesterdayDate = () => {
@@ -71,12 +73,6 @@ export function ScheduleTable({ onRowDoubleClick, token }: Props) {
   const handleCloseSchedule = () => {
     setIsAddSchedulePopupOpen(false);
   };
-  const handleSaveSchedule = (ScheduleData: any) => {
-    // Save the ScheduleData from the popup add in bottom-left schedule table
-    // Don't know how to do this yet, just logging for now
-    console.log("Saved data:", ScheduleData);
-    setIsAddSchedulePopupOpen(false);
-  };
 
   const swr = {
     GetDispatchPlans: useSWR(
@@ -92,6 +88,18 @@ export function ScheduleTable({ onRowDoubleClick, token }: Props) {
         );
       }
     ),
+  };
+
+  const handleSaveSchedule = async (params: CreateDispatchPlan$Params) => {
+    // Save the ScheduleData from the popup add in bottom-left schedule table
+    // Don't know how to do this yet, just logging for now
+    await httpPost$CreateDispatchPlan(
+      `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans`,
+      params
+    );
+    alert("Dispatch plan created successfully!");
+    swr.GetDispatchPlans.mutate();
+    setIsAddSchedulePopupOpen(false);
   };
 
   const tableConfig = {

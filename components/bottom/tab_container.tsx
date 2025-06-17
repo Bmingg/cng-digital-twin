@@ -6,8 +6,6 @@ import useSWR from "swr";
 import { httpGet$GetPlanAssignments } from "@/lib/commands/GetPlanAssignments/fetcher";
 import { CLIENT_ENV } from "@/lib/env";
 import { UpdateTimePopup } from "./update_time_popup";
-import { UpdateAssignmentProgress$Params } from "@/lib/commands/UpdateAssignmentProgress/typing";
-import { httpPatch$UpdateAssignmentProgress } from "@/lib/commands/UpdateAssignmentProgress/fetcher";
 
 // Define the types for your tab data
 interface TabData {
@@ -116,14 +114,15 @@ function TabContent({ data, onAddAssignment, token }: TabContentProps) {
       if (time.length !== 5) alert("invalid input time");
       let [hours, minutes] = time.split(":").map(Number);
       date.setUTCHours(hours, minutes, 0);
-      await httpPatch$UpdateAssignmentProgress(
-        `${CLIENT_ENV.BACKEND_URL}/api/dispatch/assignments/${id}/progress`,
-        {
-          event_time: date.toISOString(),
-        },
-        token
-      );
-      alert("Update time successfully!");
+      // await httpPatch$UpdateAssignmentProgress(
+      //   `${CLIENT_ENV.BACKEND_URL}/api/dispatch/assignments/${id}/progress`,
+      //   {
+      //     event_time: date.toISOString(),
+      //   },
+      //   token
+      // );
+      // alert("Update time successfully!");
+      // swr.GetPlanAssignments.mutate();
     }
   };
 
