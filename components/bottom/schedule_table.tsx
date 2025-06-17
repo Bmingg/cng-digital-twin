@@ -62,16 +62,6 @@ export function ScheduleTable({ onRowDoubleClick, token }: Props) {
     setIsAddSchedulePopupOpen(true);
   };
 
-  const handleDeleteSchedule = async () => {
-    if (!selectedRow) return;
-    await httpDelete$DeleteResources(
-      `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans`,
-      { id: selectedRow },
-      token
-    );
-    swr.GetDispatchPlans.mutate(); // Revalidate the SWR cache
-  };
-
   const handleCloseSchedule = () => {
     setIsAddSchedulePopupOpen(false);
   };
