@@ -4,6 +4,18 @@ import React, { useState, useRef, useCallback } from "react";
 import { DataTable } from "./topleft/data_table";
 import { ScheduleTable, TableConfig } from "./bottom/schedule_table";
 import { TabContainer } from "./bottom/tab_container";
+import { MapView } from "./map/map_view";
+import { httpGet$GetResourcesCompressionStations } from "@/lib/commands/GetResourcesCompressionStations/fetcher";
+import { CLIENT_ENV } from "@/lib/env";
+import useSWR from "swr";
+
+interface CompressionStation {
+  id: string;
+  gps_coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+}
 
 interface HorizontalPanelsProps {
   topContent: React.ReactNode;
@@ -135,6 +147,7 @@ type Tab = {
   id: string;
   name: string;
   data: TableConfig["data"][0];
+  token: string;
 };
 
 type Props = {
@@ -145,6 +158,13 @@ type Props = {
 export function ResizablePanels({ token }: Props) {
   const [openTabs, setOpenTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState<string | undefined>();
+
+  // Sample coordinates for demonstration
+  const sampleCoordinates = [
+    { id: "station1", latitude: 10.762622, longitude: 106.660172, name: "S1" },
+    { id: "station2", latitude: 10.775658, longitude: 106.700417, name: "S2" },
+    { id: "station3", latitude: 10.783333, longitude: 106.666667, name: "S3" },
+  ];
 
   const handleRowDoubleClick = (row: TableConfig["data"][0]) => {
     const tabId = `${row.id}`;
@@ -160,6 +180,7 @@ export function ResizablePanels({ token }: Props) {
         id: tabId,
         name: tabName,
         data: row,
+        token,
       };
       setOpenTabs((prev) => [...prev, newTab]);
       setActiveTab(tabId);
@@ -193,7 +214,7 @@ export function ResizablePanels({ token }: Props) {
             }
             rightContent={
               <div className="h-full">
-                <span>Placeholder</span>
+                <MapView coordinates={sampleCoordinates} />
               </div>
             }
           />
