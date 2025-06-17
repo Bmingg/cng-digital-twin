@@ -1,0 +1,28 @@
+import { z } from "zod";
+
+export const GetPlanAssignments$Result = z
+  .object({
+    order_id: z.string(),
+    truck_id: z.number(),
+    tank_id: z.number(),
+    compressor_id: z.number(),
+    estimated_start_time: z.string().nullish(),
+    estimated_tank_loading_finished: z.string().nullish(),
+    estimated_gas_filling_finished: z.string().nullish(),
+    estimated_delivery_finished: z.string().nullish(),
+    estimated_tank_unloading_finished: z.string().nullish(),
+    estimated_end_time: z.string().nullish(),
+    id: z.string(),
+    plan_id: z.string(),
+    status: z.string(),
+    actual_start_time: z.string().nullish(),
+    actual_tank_loading_finished: z.string().nullish(),
+    actual_gas_filling_finished: z.string().nullish(),
+    actual_delivery_finished: z.string().nullish(),
+    actual_tank_unloading_finished: z.string().nullish(),
+    actual_end_time: z.string().nullish(),
+  })
+  .array();
+export type GetPlanAssignments$Result = z.infer<
+  typeof GetPlanAssignments$Result
+>;

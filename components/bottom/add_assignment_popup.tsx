@@ -1,28 +1,45 @@
-'use client';
-import React, { useState, useEffect } from 'react';
+"use client";
+import React, { useState, useEffect } from "react";
+
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: () => void;
+};
 
 const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({});
 
   // Fixed attribute set for assignment window
-  const assignmentAttributes = ['Order ID', 'Truck ID', 'Tank ID', 'Compressor ID', 'Status', 'Estimated', 'Actual'];
+  const assignmentAttributes = [
+    "Order ID",
+    "Truck ID",
+    "Tank ID",
+    "Compressor ID",
+    "Status",
+    "Estimated",
+    "Actual",
+  ];
 
   // Reset form data when popup opens
   useEffect(() => {
     if (isOpen) {
       const initialFormData = {};
-      assignmentAttributes.forEach(attribute => {
-        const fieldKey = attribute.toLowerCase().replace(/\s+/g, '').replace(/[^\w]/g, '');
-        initialFormData[fieldKey] = '';
+      assignmentAttributes.forEach((attribute) => {
+        const fieldKey = attribute
+          .toLowerCase()
+          .replace(/\s+/g, "")
+          .replace(/[^\w]/g, "");
+        initialFormData[fieldKey] = "";
       });
       setFormData(initialFormData);
     }
   }, [isOpen]);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -37,7 +54,7 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
   const handleCancel = () => {
     // Reset form
     setFormData({});
-    console.log('Assignment popup cancelled');
+    console.log("Assignment popup cancelled");
     if (onClose) {
       onClose();
     }
@@ -49,7 +66,6 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-brand-BADFCD rounded-2xl shadow-2xl w-full max-w-2xl mx-4">
-        
         {/* Main Content */}
         <div className="p-4 pb-0">
           <div className="grid grid-cols-2">
@@ -58,17 +74,23 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
               {assignmentAttributes.map((attribute, index) => {
                 const isFirst = index === 0;
                 const isLast = index === assignmentAttributes.length - 1;
-                
+
                 return (
                   <div
                     key={index}
                     className={`h-12 p-4 bg-brand-F1EDEA border-black border-solid border flex items-center justify-center
-                      ${isFirst ? 'border-t border-l border-r rounded-tl-lg' : 'border-l border-r'}
-                      ${isLast ? 'border-b rounded-bl-lg border-t-0': ''}
-                      ${!isFirst && !isLast ? 'border-t-0' : ''}
+                      ${
+                        isFirst
+                          ? "border-t border-l border-r rounded-tl-lg"
+                          : "border-l border-r"
+                      }
+                      ${isLast ? "border-b rounded-bl-lg border-t-0" : ""}
+                      ${!isFirst && !isLast ? "border-t-0" : ""}
                     `}
                   >
-                    <span className="font-bold text-lg text-gray-800">{attribute}</span>
+                    <span className="font-bold text-lg text-gray-800">
+                      {attribute}
+                    </span>
                   </div>
                 );
               })}
@@ -79,52 +101,72 @@ const AddAssignmentPopup = ({ isOpen, onClose, onSave }) => {
               {assignmentAttributes.map((attribute, index) => {
                 const isFirst = index === 0;
                 const isLast = index === assignmentAttributes.length - 1;
-                const fieldKey = attribute.toLowerCase().replace(/\s+/g, '').replace(/[^\w]/g, '');
-                
+                const fieldKey = attribute
+                  .toLowerCase()
+                  .replace(/\s+/g, "")
+                  .replace(/[^\w]/g, "");
+
                 // Determine input type and options based on attribute
-                let inputType = 'text';
+                let inputType = "text";
                 let placeholder = `Enter ${attribute.toLowerCase()}`;
                 let isDropdown = false;
                 let dropdownOptions = [];
-                
-                if (attribute === 'Status') {
+
+                if (attribute === "Status") {
                   isDropdown = true;
-                  dropdownOptions = ['completed', 'in progress'];
-                  placeholder = 'Select status';
-                } else if (attribute === 'Estimated' || attribute === 'Actual') {
-                  inputType = 'time';
-                  placeholder = '';
-                } else if (attribute.includes('ID')) {
-                  inputType = 'number';
+                  dropdownOptions = ["completed", "in progress"];
+                  placeholder = "Select status";
+                } else if (
+                  attribute === "Estimated" ||
+                  attribute === "Actual"
+                ) {
+                  inputType = "time";
+                  placeholder = "";
+                } else if (attribute.includes("ID")) {
+                  inputType = "number";
                 }
-                
+
                 return (
                   <div key={index} className="h-12">
                     {isDropdown ? (
                       <select
-                        value={formData[fieldKey] || ''}
-                        onChange={(e) => handleInputChange(fieldKey, e.target.value)}
+                        value={formData[fieldKey] || ""}
+                        onChange={(e) =>
+                          handleInputChange(fieldKey, e.target.value)
+                        }
                         className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
-                          ${isFirst ? 'border-t border-l border-r rounded-tr-lg' : 'border-r'}
-                          ${isLast ? 'border-b rounded-br-lg border-t-0' : ''}
-                          ${!isFirst && !isLast ? 'border-t-0' : ''}
+                          ${
+                            isFirst
+                              ? "border-t border-l border-r rounded-tr-lg"
+                              : "border-r"
+                          }
+                          ${isLast ? "border-b rounded-br-lg border-t-0" : ""}
+                          ${!isFirst && !isLast ? "border-t-0" : ""}
                         `}
                       >
                         <option value="">{placeholder}</option>
-                        {dropdownOptions.map(option => (
-                          <option key={option} value={option}>{option}</option>
+                        {dropdownOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
                         ))}
                       </select>
                     ) : (
                       <input
                         type={inputType}
                         placeholder={placeholder}
-                        value={formData[fieldKey] || ''}
-                        onChange={(e) => handleInputChange(fieldKey, e.target.value)}
+                        value={formData[fieldKey] || ""}
+                        onChange={(e) =>
+                          handleInputChange(fieldKey, e.target.value)
+                        }
                         className={`w-full h-full text-base px-4 border border-black border-l-0 border-solid focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 border-solid
-                          ${isFirst ? 'border-t border-l border-r rounded-tr-lg' : 'border-r'}
-                          ${isLast ? 'border-b rounded-br-lg border-t-0' : ''}
-                          ${!isFirst && !isLast ? 'border-t-0' : ''}
+                          ${
+                            isFirst
+                              ? "border-t border-l border-r rounded-tr-lg"
+                              : "border-r"
+                          }
+                          ${isLast ? "border-b rounded-br-lg border-t-0" : ""}
+                          ${!isFirst && !isLast ? "border-t-0" : ""}
                         `}
                       />
                     )}
