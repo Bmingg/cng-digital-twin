@@ -17,6 +17,7 @@ import { httpGet$GetResourcesStations } from '@/lib/commands/GetResourcesStation
 
 const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selectedRow }: any) => {
   const [formData, setFormData] = useState({});
+  const [isFormInitialized, setIsFormInitialized] = useState(false);
 
   const swr = {
     GetResourcesTruckTypes: useSWR(
@@ -220,7 +221,7 @@ const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selecte
   //     setFormData(initialFormData);
   //   }
   // }, [isOpen, selectedOption, currentAttributes]);
-    if (selectedRow && swr) {
+    if (selectedRow && swr && isOpen && !isFormInitialized) {
       // Find the complete row data based on the selectedRow ID
       let rowData = null;
       
@@ -251,10 +252,14 @@ const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selecte
       
       if (rowData) {
         setFormData(rowData);
+        setIsFormInitialized(true);
       }
     }
-  }, [selectedRow, selectedOption, swr]);
+  }, [selectedRow, selectedOption, swr, isFormInitialized, isOpen]);
   
+  useEffect(() => {
+    setIsFormInitialized(false);
+  }, [selectedRow]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -277,8 +282,10 @@ const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selecte
     // Reset form
     setFormData({});
     console.log('Popup cancelled');
+    setIsFormInitialized(false);
     if (onClose) {
       onClose();
+      setIsFormInitialized(false);
     }
   };
 
