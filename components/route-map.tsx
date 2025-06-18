@@ -154,50 +154,72 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
           console.log('Route geometry:', route.geometry);
           console.log('Route legs:', route.legs);
           
-          const features: any[] = [];
-          
-          // Create colored segments using the detailed leg geometries
-          for (let i = 0; i < locations.length - 1; i++) {
-            const toLocation = locations[i + 1];
-            const status = getRouteStatus(toLocation, currentStep);
+          // Check if we have the main route geometry
+          if (route.geometry && route.geometry.coordinates && route.geometry.coordinates.length > 0) {
+            // Use the complete route geometry and split it into segments based on waypoints
+            const routeCoordinates = route.geometry.coordinates;
+            const features: any[] = [];
             
-            // Get the leg for this segment
-            const leg = route.legs[i];
-            
-            if (leg && leg.geometry && leg.geometry.coordinates) {
-              // Use the detailed curved geometry from the leg
-              features.push({
-                type: 'Feature',
-                properties: { status },
-                geometry: {
-                  type: 'LineString',
-                  coordinates: leg.geometry.coordinates,
-                },
-              });
-            } else {
-              console.warn(`No detailed geometry for leg ${i}, using straight line`);
-              // Fallback to straight line for this segment
+            // Create segments between each pair of locations
+            for (let i = 0; i < locations.length - 1; i++) {
               const fromLocation = locations[i];
-              features.push({
-                type: 'Feature',
-                properties: { status },
-                geometry: {
-                  type: 'LineString',
-                  coordinates: [
-                    [fromLocation.longitude, fromLocation.latitude],
-                    [toLocation.longitude, toLocation.latitude]
-                  ],
-                },
-              });
+              const toLocation = locations[i + 1];
+              const status = getRouteStatus(toLocation, currentStep);
+              
+              // For the main route geometry, we need to find the portion between waypoints
+              // Since we have legs, we can use them to split the geometry
+              if (route.legs && route.legs[i] && route.legs[i].geometry) {
+                // Use the leg geometry if available
+                features.push({
+                  type: 'Feature',
+                  properties: { status },
+                  geometry: route.legs[i].geometry,
+                });
+              } else {
+                // Fallback: estimate the segment from the full route
+                // This is a simplified approach - in reality, you'd need more complex logic
+                // to properly split the route coordinates
+                const segmentStart = Math.floor((i / (locations.length - 1)) * routeCoordinates.length);
+                const segmentEnd = Math.floor(((i + 1) / (locations.length - 1)) * routeCoordinates.length);
+                
+                const segmentCoords = routeCoordinates.slice(segmentStart, segmentEnd + 1);
+                
+                if (segmentCoords.length > 1) {
+                  features.push({
+                    type: 'Feature',
+                    properties: { status },
+                    geometry: {
+                      type: 'LineString',
+                      coordinates: segmentCoords,
+                    },
+                  });
+                } else {
+                  // Ultimate fallback to straight line
+                  features.push({
+                    type: 'Feature',
+                    properties: { status },
+                    geometry: {
+                      type: 'LineString',
+                      coordinates: [
+                        [fromLocation.longitude, fromLocation.latitude],
+                        [toLocation.longitude, toLocation.latitude]
+                      ],
+                    },
+                  });
+                }
+              }
             }
+
+            console.log('Route features with curved paths created:', features);
+
+            setRouteGeoJson({
+              type: 'FeatureCollection',
+              features,
+            });
+          } else {
+            console.warn('No route geometry found, using fallback');
+            throw new Error('No route geometry');
           }
-
-          console.log('Route features with colors created:', features);
-
-          setRouteGeoJson({
-            type: 'FeatureCollection',
-            features,
-          });
 
           // Set truck position to current step
           if (locations[currentStep]) {
@@ -205,6 +227,7 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
           }
         } else {
           console.error('No routes found in API response');
+          throw new Error('No routes found');
         }
       } catch (error) {
         console.error("Error fetching route from Mapbox:", error);
@@ -441,4 +464,4 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
       </Map>
     </div>
   );
-} 
+}
