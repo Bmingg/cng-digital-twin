@@ -203,6 +203,7 @@ export function PlanTable({ onRowDoubleClick, token, refreshCounter }: Props) {
           isOpen={isAddPlanPopupOpen}
           onClose={handleClosePlan}
           onSave={handleSavePlan}
+          onRefresh={() => swr.GetDispatchPlans.mutate()}
           token={token}
         />
         <div className="flex flex-col h-full w-full bg-gray-100 items-center justify-center">
@@ -228,6 +229,7 @@ export function PlanTable({ onRowDoubleClick, token, refreshCounter }: Props) {
           isOpen={isAddPlanPopupOpen}
           onClose={handleClosePlan}
           onSave={handleSavePlan}
+          onRefresh={() => swr.GetDispatchPlans.mutate()}
           token={token}
         />
         <div className="flex flex-col h-full w-full bg-brand-F1EDEA items-center justify-center">
@@ -253,6 +255,7 @@ export function PlanTable({ onRowDoubleClick, token, refreshCounter }: Props) {
         isOpen={isAddPlanPopupOpen}
         onClose={handleClosePlan}
         onSave={handleSavePlan}
+        onRefresh={() => swr.GetDispatchPlans.mutate()}
         token={token}
       />
       <div className="flex flex-col h-full w-full">

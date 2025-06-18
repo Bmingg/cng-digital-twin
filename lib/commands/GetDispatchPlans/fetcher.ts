@@ -5,12 +5,15 @@ export async function httpGet$GetDispatchPlans(
   { start_date }: GetDispatchPlans$Params,
   token: string
 ) {
-  const end_date = new Date(start_date);
-  start_date.setUTCHours(0, 0, 0);
-  end_date.setUTCHours(23, 59, 59);
+  // Create start and end of day in UTC
+  const startOfDay = new Date(start_date);
+  const endOfDay = new Date(start_date);
+  
+  startOfDay.setUTCHours(0, 0, 0, 0);
+  endOfDay.setUTCHours(23, 59, 59, 999);
 
   const response = await fetch(
-    `${url}?start_date=${start_date.toISOString()}&end_date=${end_date.toISOString()}`,
+    `${url}?start_date=${startOfDay.toISOString()}&end_date=${endOfDay.toISOString()}`,
     {
       method: "GET",
       headers: {
