@@ -5,8 +5,8 @@ export const CreateOrders$Params = z.object({
   required_volume: z.number(),
   delivery_time: z.string(),
   priority_level: z.number(),
-  id: z.string(),
-  status: z.string(),
+  id: z.string().optional(),
+  status: z.string().optional(),
 });
 export type CreateOrders$Params = z.infer<typeof CreateOrders$Params>;
 

@@ -3,8 +3,12 @@
 @tailwind utilities;
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-family: 'Inter', 'Geist', system-ui, sans-serif;
+  background: #f7f8fa;
+  color: #222;
+  font-size: 17px;
+  line-height: 1.6;
+  transition: background 0.2s, color 0.2s;
 }
 
 @layer utilities {
@@ -22,4 +26,38 @@ body {
 table, th, td {
   border: 1px solid black;
   border-collapse: collapse;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+  border-radius: 0.5rem;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus, button:focus {
+  box-shadow: 0 0 0 2px #34d39933;
+  border-color: #34d399;
+}
+
+.table-modern {
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04);
+  border: 1px solid #e5e7eb;
+}
+
+.rounded-xl { border-radius: 1rem; }
+.rounded-lg { border-radius: 0.75rem; }
+.shadow-md { box-shadow: 0 4px 16px 0 rgba(0,0,0,0.08); }
+.shadow-sm { box-shadow: 0 2px 8px 0 rgba(0,0,0,0.04); }
+
+.modern-app {
+  font-family: 'Inter', 'Geist', system-ui, sans-serif;
+  background: #f7f8fa;
+  color: #222;
+  font-size: 17px;
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background 0.2s, color 0.2s;
 }

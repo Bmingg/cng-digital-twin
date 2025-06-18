@@ -10,24 +10,45 @@ const ErrorMessage = z.object({
 
 export async function httpPost(
   url: string,
-  params: AddAssignmentToPlan$Params
+  params: AddAssignmentToPlan$Params,
+  token: string
 ): Promise<AddAssignmentToPlan$Result> {
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(params),
   });
   if (!response.ok) {
     const text = await response.text();
-    const data = JSON.parse(text);
-    const result = ErrorMessage.safeParse(data);
-    if (result.success) {
-      throw new Error(result.data.detail);
-    } else {
-      throw new Error("response not ok");
+    console.error('AddAssignmentToPlan API Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: url,
+      params: params,
+      responseText: text
+    });
+    
+    try {
+      const data = JSON.parse(text);
+      const result = ErrorMessage.safeParse(data);
+      if (result.success) {
+        throw new Error(result.data.detail);
+      } else {
+        // Try to extract error message from other possible formats
+        if (data.message) {
+          throw new Error(data.message);
+        } else if (data.error) {
+          throw new Error(data.error);
+        } else {
+          throw new Error(`API Error: ${response.status} ${response.statusText}. Response: ${text}`);
+        }
+      }
+    } catch (parseError) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}. Response: ${text}`);
     }
   }
   const text = await response.text();

@@ -17,6 +17,7 @@ import { TopLeftBar } from "./top_left_bar";
 import { httpDelete$DeleteResources } from "@/lib/commands/DeleteResources/fetcher";
 import { AddDataPopup } from './add_popup';
 import { EditDataPopup } from './edit_popup';
+import { useToast } from "@/components/ui/toast";
 import { httpPost$CreateTruckTypes } from "@/lib/commands/CreateTruckTypes/fetcher";
 import { httpPost$CreateOrders } from "@/lib/commands/CreateOrders/fetcher";
 import { httpPost$CreateGasTankTypes } from "@/lib/commands/CreateGasTankTypes/fetcher";
@@ -38,6 +39,14 @@ import { httpPut$UpdateCompressors } from "@/lib/commands/UpdateCompressors/fetc
 import { httpPut$UpdateCompressionStations } from "@/lib/commands/UpdateCompressionStations/fetcher";
 import { httpPut$UpdateCustomers } from "@/lib/commands/UpdateCustomers/fetcher";
 import { httpPut$UpdateStations } from "@/lib/commands/UpdateStations/fetcher";
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+// Configure dayjs to use GMT+7
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('Asia/Bangkok'); // Bangkok is GMT+7
 
 type Props = {
   token: string;
@@ -46,84 +55,125 @@ type Props = {
 export function DataTable({ token }: Props) {
   const [selectedOption, setSelectedOption] = React.useState("");
   const [searchValue, setSearchValue] = React.useState("");
-  const [selectedRow, setSelectedRow] = React.useState<string | undefined>();
+  const [selectedRow, setSelectedRow] = React.useState<string | number | undefined>();
   const [isAddPopupOpen, setIsAddPopupOpen] = React.useState(false);
   const [isEditPopupOpen, setIsEditPopupOpen] = React.useState(false);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [filterPanelOpen, setFilterPanelOpen] = React.useState(false);
+  const [filterRows, setFilterRows] = React.useState<any[]>([]);
+  const [orderDay, setOrderDay] = React.useState<string>("");
+  const toast = useToast();
   
-  const handleSaveEdit = (data: any) => {
+  // Helper: get available operators for a field
+  const getOperators = (col: any) => {
+    if (["count", "number_of_compressors", "id"].includes(col.key)) {
+      return ["eq", "gt", "gte", "lt", "lte", "in"];
+    }
+    if (["vmax", "rental_cost_by_hour", "loading_time", "capacity_m3"].includes(col.key)) {
+      return ["eq", "gt", "gte", "lt", "lte", "in"];
+    }
+    if (["name", "address", "contact_info", "owned"].includes(col.key)) {
+      return ["eq", "contains", "icontains", "in"];
+    }
+    if (["status"].includes(col.key)) {
+      return ["eq", "in"];
+    }
+    if (["delivery_time"].includes(col.key)) {
+      return ["eq", "gte", "lte"];
+    }
+    return ["eq"];
+  };
 
+  // Helper: operator label
+  const operatorLabel = (op: string) => {
+    switch (op) {
+      case "eq": return "=";
+      case "gt": return ">";
+      case "gte": return ">=";
+      case "lt": return "<";
+      case "lte": return "<=";
+      case "in": return "in";
+      case "contains": return "contains";
+      case "icontains": return "icontains";
+      default: return op;
+    }
+  };
+
+  // Build query from filterRows
+  const buildQuery = () => {
+    if (selectedOption === "orders" && orderDay) {
+      return `?date=${orderDay}`;
+    }
+    return "";
+  };
+
+  const handleSaveEdit = async (data: any) => {
     if (!selectedRow) return;
-    console.log('Edited data:', data);
     if (selectedOption === "truckTypes") {
-      httpPut$UpdateTruckTypes(
+      await httpPut$UpdateTruckTypes(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types`,
         data,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesTruckTypes.mutate(); // Refresh the truck types data
-      };
+      );
+      await new Promise(res => setTimeout(res, 500));
+      await swr.GetResourcesTruckTypes.mutate(undefined, { revalidate: true });
+    }
     if (selectedOption === "orders") {
-      // Handle saving orders
-      httpPut$UpdateOrders(
+      console.log('DataTable - updating order with data:', data);
+      await httpPut$UpdateOrders(
         `${CLIENT_ENV.BACKEND_URL}/api/orders`,
         data,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesAllOrders.mutate(); // Refresh the orders data
+      );
+      await new Promise(res => setTimeout(res, 500));
+      await swr.GetResourcesAllOrders.mutate(undefined, { revalidate: true });
     }
     if (selectedOption === "gasTankTypes") {
-      // Handle saving gas tank types
-      httpPut$UpdateGasTankTypes(
+      await httpPut$UpdateGasTankTypes(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types`,
         data,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesGasTankTypes.mutate(); // Refresh the gas tank types data
+      );
+      await new Promise(res => setTimeout(res, 500));
+      await swr.GetResourcesGasTankTypes.mutate(undefined, { revalidate: true });
     }
     if (selectedOption === "gasTanks") {
-      // Handle saving gas tanks
-      httpPut$UpdateGasTanks(
+      await httpPut$UpdateGasTanks(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks`,
         data,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesGasTanks.mutate(); // Refresh the gas tanks data
+      );
+      await new Promise(res => setTimeout(res, 500));
+      await swr.GetResourcesGasTanks.mutate(undefined, { revalidate: true });
     }
     if (selectedOption === "trucks") {
-      // Handle saving trucks
-      httpPut$UpdateTrucks(
+      await httpPut$UpdateTrucks(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks`,
         data,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesTrucks.mutate(); // Refresh the trucks data
+      );
+      await new Promise(res => setTimeout(res, 500));
+      await swr.GetResourcesTrucks.mutate(undefined, { revalidate: true });
     }
     if (selectedOption === "compressorTypes") {
-      httpPut$UpdateCompressorTypes(
+      await httpPut$UpdateCompressorTypes(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types`,
         data,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesCompressorTypes.mutate(); // Refresh the compressor types data
+      );
+      await new Promise(res => setTimeout(res, 500));
+      await swr.GetResourcesCompressorTypes.mutate(undefined, { revalidate: true });
     }
     if (selectedOption === "compressors") {
-      // Handle saving compressors
-      httpPut$UpdateCompressors(
+      await httpPut$UpdateCompressors(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors`,
         data,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesCompressors.mutate(); // Refresh the compressors data
+      );
+      await new Promise(res => setTimeout(res, 500));
+      await swr.GetResourcesCompressors.mutate(undefined, { revalidate: true });
     }
     if (selectedOption === "compressionStations") {
-      // Handle saving compressor stations
       const transformDataFormat = (data: any) => {
         const { latitude, longitude, ...rest } = data;
         return {
@@ -135,17 +185,15 @@ export function DataTable({ token }: Props) {
         };
       };
       const transformedData = transformDataFormat(data);
-
-      httpPut$UpdateCompressionStations(
+      await httpPut$UpdateCompressionStations(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/compression-stations`,
         transformedData,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesCompressionStations.mutate(); // Refresh the compression stations data
+      );
+      await new Promise(res => setTimeout(res, 500));
+      await swr.GetResourcesCompressionStations.mutate(undefined, { revalidate: true });
     }
     if (selectedOption === "customers") {
-      // Handle saving customers
       const transformDataFormat = (data: any) => {
         const { latitude, longitude, ...rest } = data;
         return {
@@ -157,16 +205,15 @@ export function DataTable({ token }: Props) {
         };
       };
       const transformedData = transformDataFormat(data);
-      httpPut$UpdateCustomers(
+      await httpPut$UpdateCustomers(
         `${CLIENT_ENV.BACKEND_URL}/api/resources/customers`,
         transformedData,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesCustomers.mutate(); // Refresh the customers data
+      );
+      await new Promise(res => setTimeout(res, 500));
+      await swr.GetResourcesCustomers.mutate(undefined, { revalidate: true });
     }
     if (selectedOption === "stations") {
-      // Handle saving stations
       const transformDataFormat = (data: any) => {
         const { latitude, longitude, ...rest } = data;
         return {
@@ -179,18 +226,21 @@ export function DataTable({ token }: Props) {
       };
       const transformedData = transformDataFormat(data);
 
-      httpPut$UpdateStations(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/stations`,
+      await httpPut$UpdateStations(
+        `${CLIENT_ENV.BACKEND_URL}/api/resources/compression-stations/`,
         transformedData,
         token
-      )
-      setIsEditPopupOpen(false);
-      swr.GetResourcesStations.mutate(); // Refresh the stations data
+      );
+      setIsAddPopupOpen(false);
+      swr.GetResourcesStations.mutate(); // Refresh the compression stations data
     }
-  }
+    setIsEditPopupOpen(false);
+  };
 
   const handleEdit = () => {
     if (!selectedRow) return;
+    console.log('DataTable - handleEdit called with selectedRow:', selectedRow, 'selectedOption:', selectedOption);
+    console.log('DataTable - available orders data:', swr.GetResourcesAllOrders.data);
     setIsEditPopupOpen(true);
   }
 
@@ -338,120 +388,103 @@ export function DataTable({ token }: Props) {
   
   const swr = {
     GetResourcesTruckTypes: useSWR(
-      ["/api/resources/truck-types/"],
-      async () =>
-        await httpGet$GetResourcesTruckTypes(
-          `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types/`,
-          {
-            limit: 100,
-            skip: 0,
-          },
+      ["/api/resources/truck-types/", buildQuery()],
+      async () => {
+        return await httpGet$GetResourcesTruckTypes(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types/${buildQuery()}`,
+          { limit: 100, skip: 0 },
           token
-        )
+        );
+      }
     ),
     GetResourcesGasTankTypes: useSWR(
-      ["/api/resources/gas-tank-types/"],
-      async () =>
-        await httpGet$GetResourcesGasTankTypes(
-          `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types/`,
-          {
-            limit: 100,
-            skip: 0,
-          },
+      ["/api/resources/gas-tank-types/", buildQuery()],
+      async () => {
+        return await httpGet$GetResourcesGasTankTypes(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types/${buildQuery()}`,
+          { limit: 100, skip: 0 },
           token
-        )
+        );
+      }
     ),
     GetResourcesGasTanks: useSWR(
-      ["/api/resources/gas-tanks/"],
-      async () =>
-        await httpGet$GetResourcesGasTanks(
-          `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks/`,
-          {
-            limit: 100,
-            skip: 0,
-          },
+      ["/api/resources/gas-tanks/", buildQuery()],
+      async () => {
+        return await httpGet$GetResourcesGasTanks(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks/${buildQuery()}`,
+          { limit: 100, skip: 0 },
           token
-        )
+        );
+      }
     ),
     GetResourcesTrucks: useSWR(
-      ["/api/resources/trucks/"],
-      async () =>
-        await httpGet$GetResourcesTrucks(
-          `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks/`,
-          {
-            limit: 100,
-            skip: 0,
-          },
+      ["/api/resources/trucks/", buildQuery()],
+      async () => {
+        return await httpGet$GetResourcesTrucks(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks/${buildQuery()}`,
+          { limit: 100, skip: 0 },
           token
-        )
+        );
+      }
     ),
     GetResourcesCompressorTypes: useSWR(
-      ["/api/resources/compressor-types/"],
-      async () =>
-        await httpGet$GetResourcesCompressorTypes(
-          `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types/`,
-          {
-            limit: 100,
-            skip: 0,
-          },
+      ["/api/resources/compressor-types/", buildQuery()],
+      async () => {
+        return await httpGet$GetResourcesCompressorTypes(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types/${buildQuery()}`,
+          { limit: 100, skip: 0 },
           token
-        )
+        );
+      }
     ),
     GetResourcesCompressors: useSWR(
-      ["/api/resources/compressors/"],
-      async () =>
-        await httpGet$GGetResourcesCompressors(
-          `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors/`,
-          {
-            limit: 100,
-            skip: 0,
-          },
+      ["/api/resources/compressors/", buildQuery()],
+      async () => {
+        return await httpGet$GGetResourcesCompressors(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors/${buildQuery()}`,
+          { limit: 100, skip: 0 },
           token
-        )
+        );
+      }
     ),
     GetResourcesCompressionStations: useSWR(
-      ["/api/resources/compression-stations/"],
-      async () =>
-        await httpGet$GetResourcesCompressionStations(
-          `${CLIENT_ENV.BACKEND_URL}/api/resources/compression-stations/`,
-          {
-            limit: 100,
-            skip: 0,
-          },
+      ["/api/resources/compression-stations/", buildQuery()],
+      async () => {
+        return await httpGet$GetResourcesCompressionStations(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/compression-stations/${buildQuery()}`,
+          { limit: 100, skip: 0 },
           token
-        )
+        );
+      }
     ),
     GetResourcesCustomers: useSWR(
-      ["/api/resources/customers/"],
-      async () =>
-        await httpGet$GetResourcesCustomers(
-          `${CLIENT_ENV.BACKEND_URL}/api/resources/customers/`,
-          {
-            limit: 100,
-            skip: 0,
-          },
+      ["/api/resources/customers/", buildQuery()],
+      async () => {
+        return await httpGet$GetResourcesCustomers(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/customers/${buildQuery()}`,
+          { limit: 100, skip: 0 },
           token
-        )
+        );
+      }
     ),
     GetResourcesAllOrders: useSWR(
-      ["/api/orders/"],
-      async () =>
-        await httpGet$GetResourcesAllOrders(
-          `${CLIENT_ENV.BACKEND_URL}/api/orders/`,
+      ["/api/orders/", buildQuery()],
+      async () => {
+        return await httpGet$GetResourcesAllOrders(
+          `${CLIENT_ENV.BACKEND_URL}/api/orders/${buildQuery()}`,
           token
-        )
+        );
+      }
     ),
     GetResourcesStations: useSWR(
-      ["/api/resources/stations/"],
-      async () =>
-        await httpGet$GetResourcesStations(
-          `${CLIENT_ENV.BACKEND_URL}/api/resources/stations/`,
-          {
-            limit: 100,
-            skip: 0,
-          },
+      ["/api/resources/stations/", buildQuery()],
+      async () => {
+        return await httpGet$GetResourcesStations(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/stations/${buildQuery()}`,
+          { limit: 100, skip: 0 },
           token
-        )
+        );
+      }
     ),
   };
 
@@ -461,96 +494,162 @@ export function DataTable({ token }: Props) {
 
   const handleDelete = async () => {
     if (!selectedRow) return;
-    if (selectedOption === "truckTypes") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types`,
-        { id: selectedRow },
-        token
-      );
-      alert("Truck type deleted successfully");
-      swr.GetResourcesTruckTypes.mutate(); // Refresh the truck types data
-    }
-    if (selectedOption === "orders") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/orders`,
-        { id: selectedRow },
-        token
-      );
-      swr.GetResourcesAllOrders.mutate(); // Refresh the orders data
-    }
-    if (selectedOption === "gasTankTypes") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types`,
-        { id: selectedRow },
-        token
-      );
-      swr.GetResourcesGasTankTypes.mutate(); // Refresh the gas tank types data
-    }
-    if (selectedOption === "gasTank") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks`,
-        { id: selectedRow },
-        token
-      );
-      swr.GetResourcesGasTanks.mutate(); // Refresh the gas tanks data
-    }
-    if (selectedOption === "trucks") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks`,
-        { id: selectedRow },
-        token
-      );
-      swr.GetResourcesTrucks.mutate(); // Refresh the trucks data
-    }
-    if (selectedOption === "compressorTypes") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types`,
-        { id: selectedRow },
-        token
-      );
-      swr.GetResourcesCompressorTypes.mutate(); // Refresh the compressor types data
-    }
-    if (selectedOption === "compressors") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors`,
-        { id: selectedRow },
-        token
-      );
-      swr.GetResourcesCompressors.mutate(); // Refresh the compressors data
-    }
-    if (selectedOption === "compressionStations") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-stations`,
-        { id: selectedRow },
-        token
-      );
-      swr.GetResourcesCompressionStations.mutate(); // Refresh the compression stations data
-    }
-    if (selectedOption === "customers") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/customers`,
-        { id: selectedRow },
-        token
-      );
-      swr.GetResourcesCustomers.mutate(); // Refresh the customers data
-    }
-    if (selectedOption === "stations") {
-      await httpDelete$DeleteResources(
-        `${CLIENT_ENV.BACKEND_URL}/api/resources/stations`,
-        { id: selectedRow },
-        token,
-      );
-      swr.GetResourcesStations.mutate(); // Refresh the stations data
+    try {
+      if (selectedOption === "truckTypes") {
+        // Check if any trucks are using this type
+        const trucksUsingType = swr.GetResourcesTrucks.data?.some(
+          (truck: any) => truck.truck_type_id === selectedRow
+        );
+        if (trucksUsingType) {
+          toast.error("Cannot delete this truck type because there are still trucks using it.");
+          return;
+        }
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/truck-types`,
+          { id: String(selectedRow) },
+          token
+        );
+        swr.GetResourcesTruckTypes.mutate();
+      }
+      if (selectedOption === "gasTankTypes") {
+        // Check if any gas tanks are using this type
+        const tanksUsingType = swr.GetResourcesGasTanks.data?.some(
+          (tank: any) => tank.gas_tank_type_id === selectedRow
+        );
+        if (tanksUsingType) {
+          toast.error("Cannot delete this gas tank type because there are still gas tanks using it.");
+          return;
+        }
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tank-types`,
+          { id: String(selectedRow) },
+          token
+        );
+        swr.GetResourcesGasTankTypes.mutate();
+      }
+      if (selectedOption === "compressorTypes") {
+        // Check if any compressors are using this type
+        const compressorsUsingType = swr.GetResourcesCompressors.data?.some(
+          (compressor: any) => compressor.compressor_type_id === selectedRow
+        );
+        if (compressorsUsingType) {
+          toast.error("Cannot delete this compressor type because there are still compressors using it.");
+          return;
+        }
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-types`,
+          { id: String(selectedRow) },
+          token
+        );
+        swr.GetResourcesCompressorTypes.mutate();
+      }
+      if (selectedOption === "orders") {
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/orders`,
+          { id: String(selectedRow) },
+          token
+        );
+        swr.GetResourcesAllOrders.mutate(); // Refresh the orders data
+      }
+      if (selectedOption === "gasTanks") {
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/gas-tanks`,
+          { id: String(selectedRow) },
+          token
+        );
+        swr.GetResourcesGasTanks.mutate(); // Refresh the gas tanks data
+      }
+      if (selectedOption === "trucks") {
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/trucks`,
+          { id: String(selectedRow) },
+          token
+        );
+        swr.GetResourcesTrucks.mutate(); // Refresh the trucks data
+      }
+      if (selectedOption === "compressors") {
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/compressors`,
+          { id: String(selectedRow) },
+          token
+        );
+        swr.GetResourcesCompressors.mutate(); // Refresh the compressors data
+      }
+      if (selectedOption === "compressionStations") {
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/compressor-stations`,
+          { id: String(selectedRow) },
+          token
+        );
+        swr.GetResourcesCompressionStations.mutate(); // Refresh the compression stations data
+      }
+      if (selectedOption === "customers") {
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/customers`,
+          { id: String(selectedRow) },
+          token
+        );
+        swr.GetResourcesCustomers.mutate(); // Refresh the customers data
+      }
+      if (selectedOption === "stations") {
+        await httpDelete$DeleteResources(
+          `${CLIENT_ENV.BACKEND_URL}/api/resources/stations`,
+          { id: String(selectedRow) },
+          token,
+        );
+        swr.GetResourcesStations.mutate(); // Refresh the stations data
+      }
+    } catch (error) {
+      console.error("Error deleting resource:", error);
+      toast.error("Failed to delete resource. Please try again.");
     }
   };
 
-  const handleFilter = () => {
-    console.log("Filter button clicked from parent");
-    // Implement filter logic here
+  const handleSearch = () => {
+    // If you want to clear search, you can do setSearchValue("") here, or leave empty
   };
 
-  const handleSearch = (value: string) => {
-    setSearchValue(value);
+  const handleRefresh = async () => {
+    if (!selectedOption) return;
+    setRefreshing(true);
+    try {
+      switch (selectedOption) {
+        case "truckTypes":
+          await swr.GetResourcesTruckTypes.mutate(undefined, { revalidate: true });
+          break;
+        case "orders":
+          await swr.GetResourcesAllOrders.mutate(undefined, { revalidate: true });
+          break;
+        case "gasTankTypes":
+          await swr.GetResourcesGasTankTypes.mutate(undefined, { revalidate: true });
+          break;
+        case "gasTanks":
+          await swr.GetResourcesGasTanks.mutate(undefined, { revalidate: true });
+          break;
+        case "trucks":
+          await swr.GetResourcesTrucks.mutate(undefined, { revalidate: true });
+          break;
+        case "compressorTypes":
+          await swr.GetResourcesCompressorTypes.mutate(undefined, { revalidate: true });
+          break;
+        case "compressors":
+          await swr.GetResourcesCompressors.mutate(undefined, { revalidate: true });
+          break;
+        case "compressionStations":
+          await swr.GetResourcesCompressionStations.mutate(undefined, { revalidate: true });
+          break;
+        case "customers":
+          await swr.GetResourcesCustomers.mutate(undefined, { revalidate: true });
+          break;
+        case "stations":
+          await swr.GetResourcesStations.mutate(undefined, { revalidate: true });
+          break;
+        default:
+          break;
+      }
+    } finally {
+      setTimeout(() => setRefreshing(false), 500); // show spinner for at least 0.5s
+    }
   };
 
   const getTableConfig = (option: string) => {
@@ -559,8 +658,8 @@ export function DataTable({ token }: Props) {
         return {
           columns: [
             { key: "id", label: "ID" },
+            { key: "vmax", label: "Volume" },
             { key: "count", label: "Count" },
-            { key: "vmax", label: "Vmax" },
             { key: "owned", label: "Ownership" },
             { key: "rental_cost_by_hour", label: "Rental Cost per Hour" },
           ],
@@ -570,19 +669,17 @@ export function DataTable({ token }: Props) {
         return {
           columns: [
             { key: "id", label: "ID" },
+            { key: "vmax", label: "Volume" },
             { key: "count", label: "Count" },
-            { key: "vmax", label: "Vmax" },
             { key: "owned", label: "Ownership" },
             { key: "rental_cost_by_hour", label: "Rental Cost per Hour" },
-            { key: "loading_time", label: "Loading Time" },
           ],
           data: swr.GetResourcesGasTankTypes.data ?? [],
         };
-
       case "gasTanks":
         const gasTanksData = swr.GetResourcesGasTanks.data;
         const modifiedGasTankData = gasTanksData
-          ? gasTanksData.map(({ gas_tank_type, station, ...rest }) => ({
+          ? gasTanksData.map(({ gas_tank_type, station, ...rest }: any) => ({
               ...rest,
               vmax: gas_tank_type.vmax,
             }))
@@ -590,63 +687,60 @@ export function DataTable({ token }: Props) {
         return {
           columns: [
             { key: "id", label: "ID" },
+            { key: "vmax", label: "Volume" },
             { key: "gas_tank_type_id", label: "Gas Tank Type ID" },
             { key: "status", label: "Status" },
-            { key: "vmax", label: "Vmax" },
             { key: "station_id", label: "Station ID" },
           ],
           data: modifiedGasTankData ?? [],
-          // data: swr.GetResourcesGasTanks.data ?? [],
         };
       case "trucks":
         const trucksData = swr.GetResourcesTrucks.data;
         const modifiedTruckData = trucksData
-          ? trucksData.map(({ truck_type, station, ...rest }) => rest)
+          ? trucksData.map(({ truck_type, station, ...rest }: any) => ({
+              ...rest,
+              vmax: truck_type.vmax,
+            }))
           : [];
         return {
           columns: [
             { key: "id", label: "ID" },
+            { key: "vmax", label: "Volume" },
             { key: "truck_type_id", label: "Truck Type ID" },
             { key: "status", label: "Status" },
             { key: "station_id", label: "Station ID" },
           ],
           data: modifiedTruckData ?? [],
-          // data: swr.GetResourcesTrucks.data ?? [],
         };
       case "compressorTypes":
         return {
           columns: [
             { key: "id", label: "ID" },
-            { key: "capacity", label: "Capacity" },
-            { key: "capacity_m3", label: "Capacity (m3)" },
             { key: "count", label: "Count" },
+            { key: "owned", label: "Ownership" },
+            { key: "rental_cost_by_hour", label: "Rental Cost per Hour" },
           ],
           data: swr.GetResourcesCompressorTypes.data ?? [],
         };
       case "compressors":
         const compressorsData = swr.GetResourcesCompressors.data;
         const modifiedCompressorsData = compressorsData
-          ? compressorsData.map(
-              ({ compressor_type, compressor_station, ...rest }) => rest
-            )
+          ? compressorsData.map(({ compressor_type, compressor_station, ...rest }: any) => rest)
           : [];
         return {
           columns: [
             { key: "id", label: "ID" },
             { key: "compressor_type_id", label: "Compressor Type ID" },
-            { key: "status", label: "Status" },
             { key: "compressor_station_id", label: "Compressor Station ID" },
+            { key: "status", label: "Status" },
           ],
           data: modifiedCompressorsData ?? [],
-          // data: swr.GetResourcesCompressors.data ?? [],
         };
       case "compressionStations":
-        const compressionStationsData =
-          swr.GetResourcesCompressionStations.data;
+        const compressionStationsData = swr.GetResourcesCompressionStations.data;
         const modifiedCompressionStationsData = compressionStationsData
-          ? compressionStationsData.map(({ gps_coordinates, ...rest }) => rest)
+          ? compressionStationsData.map(({ gps_coordinates, ...rest }: any) => rest)
           : [];
-        // const modifiedCompressionStationsData = swr.GetResourcesCompressionStations.data.map(({ gps_coordinates, ...rest }) => rest);
         return {
           columns: [
             { key: "id", label: "ID" },
@@ -656,12 +750,11 @@ export function DataTable({ token }: Props) {
             { key: "longitude", label: "Longitude" },
           ],
           data: modifiedCompressionStationsData ?? [],
-          // data: swr.GetResourcesCompressionStations.data ?? [],
         };
       case "customers":
         const customersData = swr.GetResourcesCustomers.data;
         const modifiedCustomersData = customersData
-          ? customersData.map(({ gps_coordinates, ...rest }) => rest)
+          ? customersData.map(({ gps_coordinates, ...rest }: any) => rest)
           : [];
         return {
           columns: [
@@ -669,10 +762,9 @@ export function DataTable({ token }: Props) {
             { key: "name", label: "Name" },
             { key: "address", label: "Address" },
             { key: "contact_info", label: "Contact Info" },
-            { key: "longitude", label: "Longitude" },
             { key: "latitude", label: "Latitude" },
+            { key: "longitude", label: "Longitude" },
           ],
-          // data: swr.GetResourcesCustomers.data ?? [],
           data: modifiedCustomersData ?? [],
         };
       case "orders":
@@ -680,9 +772,9 @@ export function DataTable({ token }: Props) {
           columns: [
             { key: "id", label: "ID" },
             { key: "customer_id", label: "Customer ID" },
-            { key: "required_volume", label: "Required Volume" },
-            { key: "delivery_time", label: "Delivery Time" },
-            { key: "priority_level", label: "Priority Level" },
+            { key: "required_volume", label: "Volume" },
+            { key: "delivery_time", label: "Date" },
+            { key: "priority_level", label: "Priority" },
             { key: "status", label: "Status" },
           ],
           data: swr.GetResourcesAllOrders.data ?? [],
@@ -690,14 +782,14 @@ export function DataTable({ token }: Props) {
       case "stations":
         const stationsData = swr.GetResourcesStations.data;
         const modifiedStationsData = stationsData
-          ? stationsData.map(({ gps_coordinates, ...rest }) => rest)
+          ? stationsData.map(({ gps_coordinates, ...rest }: any) => rest)
           : [];
         return {
           columns: [
             { key: "id", label: "ID" },
             { key: "address", label: "Address" },
             { key: "latitude", label: "Latitude" },
-            { key: "longitude", label: "Longitude" }, 
+            { key: "longitude", label: "Longitude" },
           ],
           data: modifiedStationsData ?? [],
         };
@@ -712,30 +804,54 @@ export function DataTable({ token }: Props) {
   // Get the table configuration based on selected option
   const tableConfig = useMemo(
     () => getTableConfig(selectedOption),
-    [selectedOption]
+    [
+      selectedOption,
+      swr.GetResourcesTruckTypes.data,
+      swr.GetResourcesGasTankTypes.data,
+      swr.GetResourcesGasTanks.data,
+      swr.GetResourcesTrucks.data,
+      swr.GetResourcesCompressorTypes.data,
+      swr.GetResourcesCompressors.data,
+      swr.GetResourcesCompressionStations.data,
+      swr.GetResourcesCustomers.data,
+      swr.GetResourcesAllOrders.data,
+      swr.GetResourcesStations.data,
+    ]
   );
 
   const filteredData = useMemo(() => {
     if (!tableConfig.data || !Array.isArray(tableConfig.data)) {
       return [];
     }
-
+    let data = tableConfig.data;
+    // If orders table, sort by delivery_time descending
+    if (selectedOption === "orders") {
+      data = [...data].sort((a, b) => {
+        const aTime = a.delivery_time ? new Date(a.delivery_time).getTime() : 0;
+        const bTime = b.delivery_time ? new Date(b.delivery_time).getTime() : 0;
+        return bTime - aTime;
+      });
+    }
     // If no search value, return all data
     if (!searchValue) {
-      return tableConfig.data;
+      return data;
     }
     return []; // TODO: fix later
-  }, [tableConfig.data, searchValue]);
+  }, [tableConfig, searchValue, selectedOption]);
 
   // Render cell content with special formatting
   const renderCellContent = (value: string, columnKey: string) => {
     switch (columnKey) {
-      // case 'status':
-      //   return getStatusBadge(value);
       case "rental_cost_by_hour":
-        return value.toLocaleString()
+        return value.toLocaleString();
       case "required_volume":
         return parseFloat(value).toFixed(2);
+      case "delivery_time":
+        // Convert to GMT+7 and show date part (YYYY-MM-DD)
+        if (typeof value === "string" && value.length >= 10) {
+          return dayjs(value).tz('Asia/Bangkok').format('YYYY-MM-DD');
+        }
+        return value;
       // Round longitude and latitude to 6 decimal places
       case "longitude":
         return parseFloat(value).toFixed(5);
@@ -746,36 +862,57 @@ export function DataTable({ token }: Props) {
     }
   };
 
+  // Add styleHover if not present
+  const styleHover = {
+    '&:hover': {
+      backgroundColor: '#bdc3c0',
+    },
+    textTransform: 'none',
+    backgroundColor: '#e6ebe9',
+  };
+
   if (!selectedOption) {
     return (
-      <>
+      <div className="flex flex-col h-full">
         <TopLeftBar
           onDropdownChange={handleDropdownChange}
           onAdd={handleAdd}
           onDelete={handleDelete}
           onEdit={handleEdit}
-          onFilter={handleFilter}
+          onRefresh={handleRefresh}
+          selectedOption={selectedOption}
+          orderDay={orderDay}
+          setOrderDay={setOrderDay}
         />
-        <div className="flex flex-col h-full w-full bg-gray-100 items-center justify-center">
-          <div className="text-gray-500 text-lg">
-            Please select an option from the dropdown
+        <div className="flex-1 min-h-0 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+          <div className="text-center p-8">
+            <div className="text-gray-400 text-6xl mb-4">📊</div>
+            <div className="text-gray-600 text-xl font-semibold mb-2">
+              Select a Resource Type
+            </div>
+            <div className="text-gray-500 text-base">
+              Choose an option from the dropdown above to view and manage data
+            </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (tableConfig.columns.length === 0) {
     return (
-      <>
+      <div className="flex flex-col h-full">
         <TopLeftBar
           onDropdownChange={handleDropdownChange}
           onAdd={handleAdd}
           onDelete={handleDelete}
           onEdit={handleEdit}
-          onFilter={handleFilter}
+          onRefresh={handleRefresh}
+          selectedOption={selectedOption}
+          orderDay={orderDay}
+          setOrderDay={setOrderDay}
         />
-        <div className="flex flex-col h-full w-full bg-gray-100 items-center justify-center">
+        <div className="flex-1 min-h-0 flex items-center justify-center bg-gray-100">
           <div className="text-gray-500 text-lg">
             No table configuration available for: {selectedOption}
           </div>
@@ -784,79 +921,78 @@ export function DataTable({ token }: Props) {
             isOpen={isAddPopupOpen}
             onClose={handleClosePopup}
             onSave={handleSaveData}
-            selectedOption={selectedOption}
+            selectedOption={selectedOption as any}
             token={token}
         />
         <EditDataPopup
             isOpen={isEditPopupOpen}
             onClose={handleCloseEditPopup}
             onSave={handleSaveEdit}
-            selectedOption={selectedOption}
+            selectedOption={selectedOption as any}
             token={token}
             selectedRow={selectedRow}
         />
-      </>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       <TopLeftBar
         onDropdownChange={handleDropdownChange}
         onAdd={handleAdd}
         onDelete={handleDelete}
         onEdit={handleEdit}
-        onFilter={handleFilter}
+        onRefresh={handleRefresh}
+        selectedOption={selectedOption}
+        orderDay={orderDay}
+        setOrderDay={setOrderDay}
       />
       <AddDataPopup
-            isOpen={isAddPopupOpen}
-            onClose={handleClosePopup}
-            onSave={handleSaveData}
-            selectedOption={selectedOption}
-            token={token}
+        isOpen={isAddPopupOpen}
+        onClose={handleClosePopup}
+        onSave={handleSaveData}
+        selectedOption={selectedOption as any}
+        token={token}
       />
       <EditDataPopup
-            isOpen={isEditPopupOpen}
-            onClose={handleCloseEditPopup}
-            onSave={handleSaveEdit}
-            selectedOption={selectedOption}
-            token={token}
-            selectedRow={selectedRow}
+        isOpen={isEditPopupOpen}
+        onClose={handleCloseEditPopup}
+        onSave={handleSaveEdit}
+        selectedOption={selectedOption as any}
+        token={token}
+        selectedRow={selectedRow}
       />
       <div className="flex flex-col h-full w-full">
-        <div className="flex-1 overflow-auto bg-brand-F1EDEA rounded-lg shadow">
-          <table className="min-w-full divide-y divide-brand-F1EDEA">
-            <thead className="bg-brand-F1EDEA sticky top-0">
+        <div className="table-modern overflow-auto mb-8" style={{ maxHeight: '48vh', width: '100%' }}>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 {tableConfig.columns.map((column) => (
                   <th
                     key={column.key}
-                    className={`py-3 text-center text-sm font-bold text-black-500`}
+                    className="py-3 px-4 text-center text-base font-bold text-gray-700 uppercase tracking-wide"
                   >
                     {column.label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-brand-F1EDEA divide-y divide-brand-F1EDEA">
+            <tbody className="bg-white divide-y divide-gray-100" key={selectedOption + (orderDay || '')}>
               {filteredData && filteredData.length > 0 ? (
                 filteredData.map((row, index) => (
                   <tr
                     key={index}
-                    className={`hover:bg-gray-50 transition-colors ${
-                      row.id === selectedRow ? "bg-gray-50" : ""
-                    }`}
-                    onClick={() => setSelectedRow(row.id.toString())}
+                    className={`hover:bg-emerald-50 transition-colors cursor-pointer ${row.id === selectedRow ? "bg-emerald-100" : ""}`}
+                    onClick={() => setSelectedRow(row.id)}
+                    style={{ height: '56px' }}
                   >
                     {tableConfig.columns.map((column) => (
                       <td
                         key={column.key}
-                        className="py-4 text-center whitespace-normal text-sm text-black"
+                        className="py-2 px-4 text-center whitespace-normal text-base text-gray-800"
                       >
-                        {renderCellContent(
-                          (row as any)[column.key],
-                          column.key
-                        )}
+                        {renderCellContent((row as any)[column.key], column.key)}
                       </td>
                     ))}
                   </tr>
@@ -875,6 +1011,9 @@ export function DataTable({ token }: Props) {
           </table>
         </div>
       </div>
-    </>
+      {refreshing && (
+        <div className="absolute top-2 right-2 text-xs text-emerald-600 bg-white px-2 py-1 rounded shadow">Refreshing...</div>
+      )}
+    </div>
   );
 }

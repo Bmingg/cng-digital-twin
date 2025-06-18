@@ -2,8 +2,20 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import { DataTable } from "./topleft/data_table";
-import { ScheduleTable, TableConfig } from "./bottom/schedule_table";
+import { PlanTable, TableConfig } from "./bottom/plan_table";
 import { TabContainer } from "./bottom/tab_container";
+import { TopRightPanel } from "./top-right-panel";
+import { httpGet$GetResourcesCompressionStations } from "@/lib/commands/GetResourcesCompressionStations/fetcher";
+import { CLIENT_ENV } from "@/lib/env";
+import useSWR from "swr";
+
+interface CompressionStation {
+  id: string;
+  gps_coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+}
 
 interface HorizontalPanelsProps {
   topContent: React.ReactNode;
@@ -135,6 +147,7 @@ type Tab = {
   id: string;
   name: string;
   data: TableConfig["data"][0];
+  token: string;
 };
 
 type Props = {
@@ -145,12 +158,23 @@ type Props = {
 export function ResizablePanels({ token }: Props) {
   const [openTabs, setOpenTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState<string | undefined>();
+  const [planRefreshCounter, setPlanRefreshCounter] = useState(0);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | undefined>();
 
-  const handleRowDoubleClick = (row: TableConfig["data"][0]) => {
+  // Function to refresh plan data when assignments change
+  const refreshPlanData = () => {
+    setPlanRefreshCounter(prev => prev + 1);
+  };
+
+  const handleRowDoubleClick = (row: TableConfig["data"][0] & { delivery_time?: string }) => {
     const tabId = row.id;
-    const temp = row.date;
-    const temp2 = temp.substring(0, row.date.length - 5);
-    const tabName = `${row.id.slice(-4)}-${temp2}`;
+    // Try to get a date string from row.date or row.delivery_time
+    let dateStr = row.date || row.delivery_time || "";
+    // Only use the date part (YYYY-MM-DD)
+    if (typeof dateStr === "string" && dateStr.length >= 10) {
+      dateStr = dateStr.slice(0, 10);
+    }
+    const tabName = `${row.id.slice(-4)} (${dateStr})`;
 
     // Check if tab is already open
     const existingTab = openTabs.find((tab) => tab.id === tabId);
@@ -160,6 +184,7 @@ export function ResizablePanels({ token }: Props) {
         id: tabId,
         name: tabName,
         data: row,
+        token,
       };
       setOpenTabs((prev) => [...prev, newTab]);
       setActiveTab(tabId);
@@ -168,6 +193,7 @@ export function ResizablePanels({ token }: Props) {
       setActiveTab(tabId);
     }
   };
+
   const closeTab = (tabId: string) => {
     setOpenTabs((prev) => {
       const newTabs = prev.filter((tab) => tab.id !== tabId);
@@ -179,6 +205,10 @@ export function ResizablePanels({ token }: Props) {
       }
       return newTabs;
     });
+  };
+
+  const handleAssignmentSelect = (assignmentId: string | null) => {
+    setSelectedAssignmentId(assignmentId || undefined);
   };
 
   return (
@@ -193,7 +223,10 @@ export function ResizablePanels({ token }: Props) {
             }
             rightContent={
               <div className="h-full">
-                <span>Placeholder</span>
+                <TopRightPanel 
+                  token={token} 
+                  selectedAssignmentId={selectedAssignmentId}
+                />
               </div>
             }
           />
@@ -202,9 +235,10 @@ export function ResizablePanels({ token }: Props) {
           <VerticalPanels
             leftContent={
               <div className="h-full">
-                <ScheduleTable
+                <PlanTable
                   onRowDoubleClick={handleRowDoubleClick}
                   token={token}
+                  refreshCounter={planRefreshCounter}
                 />
               </div>
             }
@@ -216,6 +250,8 @@ export function ResizablePanels({ token }: Props) {
                   activeTab={activeTab}
                   onTabChange={setActiveTab}
                   onTabClose={closeTab}
+                  onPlanDataChange={refreshPlanData}
+                  onAssignmentSelect={handleAssignmentSelect}
                 />
               </div>
             }

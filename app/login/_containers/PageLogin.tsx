@@ -18,11 +18,13 @@ import { Link as MuiLink } from "@mui/material";
 import { httpPost$Login } from "@/lib/commands/Login/fetcher";
 import { CLIENT_ENV } from "@/lib/env";
 import { setCookie } from "cookies-next/client";
+import { useRouter } from "next/navigation";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async () => {
     try {
@@ -36,6 +38,7 @@ const Login = () => {
       );
       setCookie("token", access_token);
       setOpen(true);
+      router.push("/dashboard");
     } catch (error) {
       console.error(error);
       alert("An error has happened. Please try again!");
@@ -99,13 +102,6 @@ const Login = () => {
             >
               Login
             </Button>
-            <Grid container justifyContent={"flex-end"}>
-              <Grid>
-                <MuiLink component={Link} href="/register">
-                  Don't have an account? Register
-                </MuiLink>
-              </Grid>
-            </Grid>
           </Box>
         </Box>
       </Container>
