@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AddAssignmentPopup } from "./add_assignment_popup"; // Import the popup component
 import { Plus, Trash, Pencil } from "lucide-react";
-import { IconButton } from "@mui/material";
+import { IconButton, Box, Tooltip } from "@mui/material";
 import useSWR from "swr";
 import { httpGet$GetPlanAssignments } from "@/lib/commands/GetPlanAssignments/fetcher";
 import { CLIENT_ENV } from "@/lib/env";
@@ -37,6 +37,7 @@ interface TabContentProps {
   data: TabData | undefined;
   onAddAssignment: (assignmentData: any) => void;
   token: string;
+  hideActionButtons?: boolean;
 }
 
 const styleHover = {
@@ -47,34 +48,29 @@ const styleHover = {
   backgroundColor: "#e6ebe9",
 };
 
-function TabContent({ data, onAddAssignment, token }: TabContentProps) {
+function TabContent({ data, onAddAssignment, token, hideActionButtons }: TabContentProps) {
   const [isAddPopupOpen, setIsAddPopupOpen] = useState(false);
   const [showUpdateTimePopup, setShowUpdateTimePopup] = useState(false);
-
-  if (!data) return null;
-
-  const swr = {
-    GetPlanAssignments: useSWR(
-      [`/api/dispatch/plans/${data.id}/assignments`],
-      async () =>
-        await httpGet$GetPlanAssignments(
-          `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans/${data.id}/assignments`,
-          token
-        )
-    ),
-  };
-
   const [open, setOpen] = useState<boolean[]>([]);
 
+  const swr = useSWR(
+    data ? [`/api/dispatch/plans/${data.id}/assignments`] : null,
+    async () =>
+      await httpGet$GetPlanAssignments(
+        `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans/${data?.id}/assignments`,
+        token
+      )
+  );
+
   useEffect(() => {
-    if (swr.GetPlanAssignments.data) {
+    if (swr.data) {
       setOpen(
-        Array.from({ length: swr.GetPlanAssignments.data.length }, () => false)
+        Array.from({ length: swr.data.length }, () => false)
       );
     } else {
       setOpen([]);
     }
-  }, [swr.GetPlanAssignments.data?.length, data]);
+  }, [swr.data]);
 
   const handleAddClick = () => {
     setIsAddPopupOpen(true);
@@ -86,12 +82,14 @@ function TabContent({ data, onAddAssignment, token }: TabContentProps) {
 
   const handlePopupSave = async (params: AddAssignmentToPlan$Params) => {
     try {
-      await httpPost$AddAssignmentToPlan(
-        `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans/${data.id}/assignments`,
-        params
+      const response = await httpPost$AddAssignmentToPlan(
+        `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans/${data?.id}/assignments`,
+        params,
+        token
       );
+      console.log('Add assignment API response:', response);
       alert("Add assignment successfully!");
-      swr.GetPlanAssignments.mutate();
+      swr.mutate();
       setIsAddPopupOpen(false);
     } catch (error) {
       console.error(error);
@@ -107,7 +105,7 @@ function TabContent({ data, onAddAssignment, token }: TabContentProps) {
     if (indexOpen === -1) {
       alert("No assignment selected!");
     } else {
-      const id = swr.GetPlanAssignments.data?.[indexOpen].id;
+      const id = swr.data?.[indexOpen].id;
       if (!id) alert("Id not found");
       const date = new Date();
       if (time.length !== 5) alert("invalid input time");
@@ -125,28 +123,10 @@ function TabContent({ data, onAddAssignment, token }: TabContentProps) {
     }
   };
 
+  if (!data) return null;
+
   return (
     <div className="h-full overflow-auto bg-brand-F1EDEA">
-      {/* Action buttons */}
-      <div className="flex px-1 gap-3 border-b border-gray-200 bg-brand-BADFCD">
-        <IconButton
-          className="flex items-center gap-1 size-sm"
-          sx={styleHover}
-          onClick={handleAddClick}
-        >
-          <Plus className="h-4 w-4" color="#003b2a" />
-        </IconButton>
-        <IconButton
-          className="flex items-center gap-1 size-sm"
-          sx={styleHover}
-          onClick={() => setShowUpdateTimePopup(true)}
-        >
-          <Pencil className="h-4 w-4" color="#003b2a" />
-        </IconButton>
-        <IconButton className="flex items-center gap-1 size-sm" sx={styleHover}>
-          <Trash className="h-4 w-4" color="#003b2a" />
-        </IconButton>
-      </div>
       {/* Table */}
       {showUpdateTimePopup ? (
         <UpdateTimePopup
@@ -154,186 +134,142 @@ function TabContent({ data, onAddAssignment, token }: TabContentProps) {
           onClose={() => setShowUpdateTimePopup(false)}
         />
       ) : undefined}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-brand-F1EDEA fontweight-bold">
-              <th className="border border-gray-300 px-1 py-1 text-center">
-                Order
-              </th>
-              <th className="border border-gray-300 px-1 py-1 text-center">
-                Truck
-              </th>
-              <th className="border border-gray-300 px-1 py-1 text-center">
-                Tank
-              </th>
-              <th className="border border-gray-300 px-1 py-1 text-center">
-                Compressor
-              </th>
-              <th className="border border-gray-300 px-1 py-1 text-center">
-                Status
-              </th>
-              <th className="border border-gray-300 px-1 py-1 text-center">
-                Estimated
-              </th>
-              <th className="border border-gray-300 px-1 py-1 text-center">
-                Actual
-              </th>
+      <div className="table-modern overflow-auto mb-8" style={{ maxHeight: '40vh', width: '100%' }}>
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50 sticky top-0 z-10">
+            <tr>
+              <th className="py-3 px-4 text-center text-base font-bold text-gray-700 uppercase tracking-wide">Order</th>
+              <th className="py-3 px-4 text-center text-base font-bold text-gray-700 uppercase tracking-wide">Truck</th>
+              <th className="py-3 px-4 text-center text-base font-bold text-gray-700 uppercase tracking-wide">Tank</th>
+              <th className="py-3 px-4 text-center text-base font-bold text-gray-700 uppercase tracking-wide">Compressor</th>
+              <th className="py-3 px-4 text-center text-base font-bold text-gray-700 uppercase tracking-wide">Status</th>
             </tr>
           </thead>
-          <tbody>
-            {swr.GetPlanAssignments.data?.map((order, index) => (
+          <tbody className="bg-white divide-y divide-gray-100">
+            {swr.data?.map((order, index) => (
               <React.Fragment key={order.order_id}>
-                {/* Order header row */}
                 <tr
-                  className="bg-brand-F1EDEA hover:bg-gray-50"
+                  className={`bg-white hover:bg-emerald-50 transition-colors cursor-pointer ${open[index] ? "bg-emerald-100" : ""}`}
                   onDoubleClick={() => {
                     setOpen((open) =>
                       open.map((_, indexOpen) =>
-                        indexOpen === index ? true : false
+                        indexOpen === index ? !open[indexOpen] : false
                       )
                     );
                   }}
+                  style={{ height: '56px' }}
                 >
-                  <td className="border border-gray-300 px-1 py-1 text-center font-sm">
-                    {order.order_id.slice(-4)}
+                  <td className="py-2 px-4 text-center whitespace-normal text-base text-gray-800">{order.order_id.slice(-4)}</td>
+                  <td className="py-2 px-4 text-center whitespace-normal text-base text-gray-800">{order.truck_id}</td>
+                  <td className="py-2 px-4 text-center whitespace-normal text-base text-gray-800">{order.tank_id}</td>
+                  <td className="py-2 px-4 text-center whitespace-normal text-base text-gray-800">{order.compressor_id}</td>
+                  <td className="py-2 px-4 text-center whitespace-normal text-base text-gray-800">
+                    <span className={`px-1 py-1 rounded text-sm font-sm ${order.status === "completed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>{order.status}</span>
                   </td>
-                  <td className="border border-gray-300 px-1 py-1 text-center">
-                    {order.truck_id}
-                  </td>
-                  <td className="border border-gray-300 px-1 py-1 text-center">
-                    {order.tank_id}
-                  </td>
-                  <td className="border border-gray-300 px-1 py-1 text-center">
-                    {order.compressor_id}
-                  </td>
-                  <td className="border border-gray-300 px-1 py-1 text-center">
-                    <span
-                      className={`px-1 py-1 rounded text-sm font-sm ${
-                        order.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </td>
-                  <td className="border border-gray-300 px-1 py-1"></td>
-                  <td className="border border-gray-300 px-1 py-1"></td>
                 </tr>
-
-                {open[index] ? (
+                {open[index] && (
                   <>
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
-                        Start time at truck depot
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.estimated_start_time || "—"}
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.actual_end_time || "—"}
+                    <tr className="bg-gray-50">
+                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
+                        Start time at truck depot:
+                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_start_time || "—"}</span>
+                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_start_time || "—"}</span>
                       </td>
                     </tr>
-
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
-                        Complete loading gas tank at tank depot
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.estimated_tank_loading_finished || "—"}
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.actual_tank_loading_finished || "—"}
+                    <tr className="bg-white">
+                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
+                        Complete loading gas tank at tank depot:
+                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_tank_loading_finished || "—"}</span>
+                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_tank_loading_finished || "—"}</span>
                       </td>
                     </tr>
-
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
-                        Complete filling gas tank at compressor station
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.estimated_gas_filling_finished || "—"}
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.actual_gas_filling_finished || "—"}
+                    <tr className="bg-gray-50">
+                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
+                        Complete filling gas tank at compressor station:
+                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_gas_filling_finished || "—"}</span>
+                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_gas_filling_finished || "—"}</span>
                       </td>
                     </tr>
-
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
-                        Complete delivery to the customer
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.estimated_delivery_finished || "—"}
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.actual_delivery_finished || "—"}
+                    <tr className="bg-white">
+                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
+                        Complete delivery to the customer:
+                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_delivery_finished || "—"}</span>
+                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_delivery_finished || "—"}</span>
                       </td>
                     </tr>
-
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
-                        Complete unloading gas tank
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.estimated_tank_unloading_finished || "—"}
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.actual_tank_unloading_finished || "—"}
+                    <tr className="bg-gray-50">
+                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
+                        Complete unloading gas tank:
+                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_tank_unloading_finished || "—"}</span>
+                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_tank_unloading_finished || "—"}</span>
                       </td>
                     </tr>
-
-                    <tr className="hover:bg-gray-50">
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1"></td>
-                      <td className="border border-gray-300 px-1 py-1 font-italic text-gray-700">
-                        Returned to truck depot
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.estimated_end_time || "—"}
-                      </td>
-                      <td className="border border-gray-300 px-1 py-1 text-center">
-                        {order.actual_end_time || "—"}
+                    <tr className="bg-white">
+                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
+                        Returned to truck depot:
+                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_end_time || "—"}</span>
+                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_end_time || "—"}</span>
                       </td>
                     </tr>
                   </>
-                ) : undefined}
+                )}
               </React.Fragment>
             ))}
           </tbody>
         </table>
       </div>
       {/* Add Assignment Popup */}
-      <AddAssignmentPopup
-        date={data.date}
-        isOpen={isAddPopupOpen}
-        onClose={handlePopupClose}
-        onSave={handlePopupSave}
-      />
+      {isAddPopupOpen && (
+        <AddAssignmentPopup
+          date={data.date}
+          isOpen={isAddPopupOpen}
+          onClose={handlePopupClose}
+          onSave={handlePopupSave}
+          token={token}
+        />
+      )}
     </div>
+  );
+}
+
+function TabActionButtons({
+  onAdd,
+  onEditTime,
+  onDelete
+}: {
+  onAdd: () => void;
+  onEditTime: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        borderRadius: "10px",
+        backgroundColor: "#f3f4f6",
+        padding: "0 12px",
+        gap: 2,
+        boxShadow: '0 2px 8px 0 rgba(0,0,0,0.04)',
+      }}
+      className="bg-white shadow-md rounded-full border border-gray-200"
+    >
+      <Tooltip title="Add assignment">
+        <IconButton className="rounded-full hover:bg-emerald-100 transition" onClick={onAdd}>
+          <Plus className="h-5 w-5" color="#003b2a" />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Edit time">
+        <IconButton className="rounded-full hover:bg-blue-100 transition" onClick={onEditTime}>
+          <Pencil className="h-5 w-5" color="#2563eb" />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title="Delete assignment">
+        <IconButton className="rounded-full hover:bg-rose-100 transition" onClick={onDelete}>
+          <Trash className="h-5 w-5" color="#e11d48" />
+        </IconButton>
+      </Tooltip>
+    </Box>
   );
 }
 
@@ -344,74 +280,71 @@ export function TabContainer({
   onTabClose,
   token,
 }: TabContainerProps) {
-  const handleAddAssignment = (assignmentData: any) => {
-    // Handle the new assignment data here
-    // This could involve updating your state, making API calls, etc.
-    console.log("Assignment added to schedule:", assignmentData);
-    // You might want to pass this up to the parent component
-    // or handle it directly here based on your data flow
+  const [showAddPopup, setShowAddPopup] = React.useState(false);
+  const [showUpdateTimePopup, setShowUpdateTimePopup] = React.useState(false);
+
+  const handleAddClick = () => {
+    setShowAddPopup(true);
   };
 
   if (tabs.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full bg-brand-BDC3C0 rounded-lg border-2 border-dashed border-gray-300">
-        <div className="text-center">
-          <div className="text-gray-400 text-4xl mb-4">📋</div>
-
-          <p className="text-gray-500 text-lg font-medium">
-            No schedules opened
-          </p>
-          <p className="text-gray-400 text-sm mt-2">
-            Double-click a row in the table to open a schedule tab
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
 
   return (
     <div className="flex flex-col h-full bg-brand-BDC3C0 rounded-lg shadow-sm border border-gray-200">
-      {/* Tab Bar */}
-      <div className="flex border-b border-gray-200 bg-brand-BDC3C0 rounded-t-lg overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-        {tabs.map((tab) => (
-          <div
-            key={tab.id}
-            className={`flex rounded-lg items-center px-1 py-1 border-r border-blank-200 cursor-pointer whitespace-nowrap min-w-0 ${
-              activeTab === tab.id
-                ? "bg-white border-b-2 fontweight-bold font-medium text-black"
-                : "hover:bg-gray-100 text-gray-600 opacity-80"
-            }`}
-            onClick={() => onTabChange(tab.id)}
-          >
-            <span className="truncate px-2 text-sm items-center flex-center">
-              {tab.name}
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onTabClose(tab.id);
-              }}
-              className={`ml-1 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                activeTab === tab.id
-                  ? "hover:bg-gray-200 text-gray-500 hover:text-black"
-                  : "hover:bg-gray-200 text-gray-500"
-              }`}
-              title="Close tab"
+      {/* Tab Bar + Action Buttons */}
+      <div className="flex bg-white shadow-md rounded-t-xl border-b border-gray-200 px-2 py-2 gap-2 items-center justify-between">
+        <div className="flex gap-2 items-center">
+          {tabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={`flex items-center px-4 py-2 rounded-full cursor-pointer min-w-0 transition-all duration-200
+                ${activeTab === tab.id
+                  ? "bg-emerald-100 text-emerald-800 font-bold shadow-sm border border-emerald-200"
+                  : "hover:bg-gray-100 text-gray-600 opacity-80"}
+              `}
+              onClick={() => onTabChange(tab.id)}
+              style={{ marginRight: 8 }}
             >
-              ×
-            </button>
-          </div>
-        ))}
+              <span className="truncate text-base items-center flex-center">
+                {tab.name}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTabClose(tab.id);
+                }}
+                className={`ml-2 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-bold transition-colors w-6 h-6
+                  ${activeTab === tab.id
+                    ? "hover:bg-emerald-200 text-emerald-700"
+                    : "hover:bg-gray-200 text-gray-500"}
+                `}
+                title="Close tab"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+        {/* Action Buttons */}
+        <div className="flex space-x-2">
+          <TabActionButtons
+            onAdd={handleAddClick}
+            onEditTime={() => setShowUpdateTimePopup(true)}
+            onDelete={() => {/* TODO: Implement delete */}}
+          />
+        </div>
       </div>
-      {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab && activeTabData && (
+        {activeTabData && (
           <TabContent
-            token={token}
             data={activeTabData.data}
-            onAddAssignment={handleAddAssignment}
+            onAddAssignment={handleAddClick}
+            token={token}
+            hideActionButtons={true}
           />
         )}
       </div>

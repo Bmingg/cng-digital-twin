@@ -1,4 +1,12 @@
 import React from "react";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+// Configure dayjs to use GMT+7
+dayjs.extend(utc);
+dayjs.extend(timezone);
+dayjs.tz.setDefault('Asia/Bangkok');
 
 type Props = {
   onClose: () => void;
@@ -32,7 +40,13 @@ export function UpdateTimePopup({ onClose, onSubmit }: Props) {
             Cancel
           </button>
           <button
-            onClick={async () => await onSubmit(value)}
+            onClick={async () => {
+              if (value.length !== 5) {
+                alert("invalid input time");
+                return;
+              }
+              await onSubmit(value);
+            }}
             className="px-8 py-3 bg-emerald-500 text-white rounded-full font-medium hover:bg-emerald-600 transition-colors duration-200"
           >
             Save

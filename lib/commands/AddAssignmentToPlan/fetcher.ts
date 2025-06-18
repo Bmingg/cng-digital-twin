@@ -10,13 +10,15 @@ const ErrorMessage = z.object({
 
 export async function httpPost(
   url: string,
-  params: AddAssignmentToPlan$Params
+  params: AddAssignmentToPlan$Params,
+  token: string
 ): Promise<AddAssignmentToPlan$Result> {
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(params),
   });

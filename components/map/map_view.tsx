@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 // @ts-ignore
-import { Map, Marker, Popup, Source, Layer, LayerProps } from 'react-map-gl/maplibre';
+import { Map, Source, Layer, Marker, Popup, LayerProps } from 'react-map-gl/maplibre';
 import { CLIENT_ENV } from '@/lib/env';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -236,8 +236,8 @@ export function MapView({ coordinates, currentRouteIndex = 3 }: MapViewProps) {
               longitude={marker.longitude}
               latitude={marker.latitude}
               anchor="bottom"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
+              onClick={(e: any) => {
+                e.originalEvent.stopPropagation();
                 setSelectedMarker(marker.id);
               }}
             >

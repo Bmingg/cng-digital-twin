@@ -203,37 +203,33 @@ export function ScheduleTable({ onRowDoubleClick, token }: Props) {
         onSave={handleSaveSchedule}
       />
       <div className="flex flex-col h-full w-full">
-        <div className="flex-1 overflow-auto bg-brand-F1EDEA rounded-lg shadow">
-          <table className="min-w-full divide-y divide-brand-F1EDEA">
-            <thead className="bg-brand-F1EDEA sticky top-0">
+        <div className="table-modern overflow-auto mb-8" style={{ maxHeight: '32vh', width: '100%' }}>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 {tableConfig.columns.map((column) => (
                   <th
                     key={column.key}
-                    className={`py-1 text-center text-sm font-bold text-black-500 uppercase`}
+                    className="py-3 px-4 text-center text-base font-bold text-gray-700 uppercase tracking-wide"
                   >
                     {column.label}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody
-              className="bg-brand-F1EDEA divide-y divide-brand-F1EDEA"
-              key={selectedDate.toDateString()}
-            >
+            <tbody className="bg-white divide-y divide-gray-100" key={selectedDate?.toDateString()}>
               {tableConfig.data.map((row, index) => (
                 <tr
                   key={index}
-                  className={`hover:bg-gray-50 transition-colors cursor-pointe ${
-                    row.id === selectedRow ? "bg-gray-50" : ""
-                  }`}
+                  className={`hover:bg-emerald-50 transition-colors cursor-pointer ${row.id === selectedRow ? "bg-emerald-100" : ""}`}
                   onDoubleClick={() => handleRowDoubleClick(row)}
                   onClick={() => setSelectedRow(row.id)}
+                  style={{ height: '56px' }}
                 >
                   {tableConfig.columns.map((column) => (
                     <td
                       key={column.key}
-                      className="py-1 text-center whitespace-normal text-sm text-black"
+                      className="py-2 px-4 text-center whitespace-normal text-base text-gray-800"
                     >
                       {renderCellContent(
                         row[column.key as Column] ?? 0,

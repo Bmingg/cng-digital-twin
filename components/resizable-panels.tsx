@@ -166,11 +166,15 @@ export function ResizablePanels({ token }: Props) {
     { id: "station3", latitude: 10.783333, longitude: 106.666667, name: "S3" },
   ];
 
-  const handleRowDoubleClick = (row: TableConfig["data"][0]) => {
+  const handleRowDoubleClick = (row: TableConfig["data"][0] & { delivery_time?: string }) => {
     const tabId = row.id;
-    const temp = row.date;
-    const temp2 = temp.substring(0, row.date.length - 5);
-    const tabName = `${row.id.slice(-4)}-${temp2}`;
+    // Try to get a date string from row.date or row.delivery_time
+    let dateStr = row.date || row.delivery_time || "";
+    // Only use the date part (YYYY-MM-DD)
+    if (typeof dateStr === "string" && dateStr.length >= 10) {
+      dateStr = dateStr.slice(0, 10);
+    }
+    const tabName = `${row.id.slice(-4)} (${dateStr})`;
 
     // Check if tab is already open
     const existingTab = openTabs.find((tab) => tab.id === tabId);
