@@ -66,50 +66,24 @@ function RouteMapController({ routeData }: { routeData: RouteData | null }) {
   return null;
 }
 
-const routeLineLayer: LayerProps = {
-  id: 'route-line',
+const routeLayer: LayerProps = {
+  id: 'route',
   type: 'line',
   source: 'route',
   paint: {
-    'line-color': '#2196F3',
-    'line-width': 6,
+    'line-color': [
+      'case',
+      ['==', ['get', 'status'], 'completed'], '#4CAF50',
+      ['==', ['get', 'status'], 'current'], '#FF9800',
+      ['==', ['get', 'status'], 'upcoming'], '#9E9E9E',
+      '#2196F3' // default color
+    ],
+    'line-width': [
+      'case',
+      ['==', ['get', 'status'], 'current'], 8,
+      6
+    ],
     'line-opacity': 0.8,
-  },
-};
-
-const completedRouteLayer: LayerProps = {
-  id: 'completed-route',
-  type: 'line',
-  source: 'route',
-  filter: ['==', ['get', 'status'], 'completed'],
-  paint: {
-    'line-color': '#4CAF50',
-    'line-width': 6,
-    'line-opacity': 0.8,
-  },
-};
-
-const currentRouteLayer: LayerProps = {
-  id: 'current-route',
-  type: 'line',
-  source: 'route',
-  filter: ['==', ['get', 'status'], 'current'],
-  paint: {
-    'line-color': '#FF9800',
-    'line-width': 8,
-    'line-opacity': 0.9,
-  },
-};
-
-const upcomingRouteLayer: LayerProps = {
-  id: 'upcoming-route',
-  type: 'line',
-  source: 'route',
-  filter: ['==', ['get', 'status'], 'upcoming'],
-  paint: {
-    'line-color': '#9E9E9E',
-    'line-width': 4,
-    'line-opacity': 0.6,
   },
 };
 
@@ -118,6 +92,28 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
   const [routeGeoJson, setRouteGeoJson] = useState<any>(null);
   const [truckPosition, setTruckPosition] = useState<[number, number] | null>(null);
   const [currentStep, setCurrentStep] = useState<number>(0);
+
+  // Update current step based on assignment status
+  useEffect(() => {
+    if (!routeData) {
+      setCurrentStep(0);
+      return;
+    }
+
+    // Map assignment status to step number
+    const statusToStep: { [key: string]: number } = {
+      'PLANNED': 0,
+      'LOADING_TANK': 1,
+      'FILLING_GAS': 2,
+      'DELIVERING_GAS': 3,
+      'UNLOADING_TANK': 4,
+      'COMPLETED': routeData.total_steps,
+      'CANCELLED': 0
+    };
+
+    const step = statusToStep[routeData.assignment_status] || 0;
+    setCurrentStep(step);
+  }, [routeData?.assignment_status, routeData?.total_steps]);
 
   useEffect(() => {
     if (!routeData || routeData.route_locations.length === 0) {
@@ -128,6 +124,18 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
 
     const fetchRoute = async () => {
       const locations = routeData.route_locations;
+      
+      console.log('RouteMap Debug:', {
+        routeData,
+        currentStep,
+        locations: locations.map(loc => ({
+          step: loc.step,
+          name: loc.name,
+          type: loc.location_type,
+          status: getRouteStatus(loc, currentStep)
+        }))
+      });
+
       const coordsString = locations
         .map(loc => `${loc.longitude},${loc.latitude}`)
         .join(';');
@@ -138,63 +146,53 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
         const response = await fetch(url);
         const data = await response.json();
         
+        console.log('Mapbox API URL:', url);
+        console.log('Mapbox API Response:', data);
+        
         if (data.routes && data.routes.length > 0) {
-          const routeLegs = data.routes[0].legs;
+          const route = data.routes[0];
+          console.log('Route geometry:', route.geometry);
+          console.log('Route legs:', route.legs);
+          
           const features: any[] = [];
           
-          // Create separate line segments for each status
-          let completedCoords: number[][] = [];
-          let currentCoords: number[][] = [];
-          let upcomingCoords: number[][] = [];
-          
-          routeLegs.forEach((leg: any, index: number) => {
-            const location = locations[index];
-            const status = getRouteStatus(location, currentStep);
-            const legCoordinates = leg.steps.flatMap((step: any) => step.geometry.coordinates);
+          // Create colored segments using the detailed leg geometries
+          for (let i = 0; i < locations.length - 1; i++) {
+            const toLocation = locations[i + 1];
+            const status = getRouteStatus(toLocation, currentStep);
             
-            // Add coordinates to the appropriate status array
-            if (status === 'completed') {
-              completedCoords.push(...legCoordinates);
-            } else if (status === 'current') {
-              currentCoords.push(...legCoordinates);
+            // Get the leg for this segment
+            const leg = route.legs[i];
+            
+            if (leg && leg.geometry && leg.geometry.coordinates) {
+              // Use the detailed curved geometry from the leg
+              features.push({
+                type: 'Feature',
+                properties: { status },
+                geometry: {
+                  type: 'LineString',
+                  coordinates: leg.geometry.coordinates,
+                },
+              });
             } else {
-              upcomingCoords.push(...legCoordinates);
+              console.warn(`No detailed geometry for leg ${i}, using straight line`);
+              // Fallback to straight line for this segment
+              const fromLocation = locations[i];
+              features.push({
+                type: 'Feature',
+                properties: { status },
+                geometry: {
+                  type: 'LineString',
+                  coordinates: [
+                    [fromLocation.longitude, fromLocation.latitude],
+                    [toLocation.longitude, toLocation.latitude]
+                  ],
+                },
+              });
             }
-          });
-          
-          // Create features for each status
-          if (completedCoords.length > 0) {
-            features.push({
-              type: 'Feature',
-              properties: { status: 'completed' },
-              geometry: {
-                type: 'LineString',
-                coordinates: completedCoords,
-              },
-            });
           }
-          
-          if (currentCoords.length > 0) {
-            features.push({
-              type: 'Feature',
-              properties: { status: 'current' },
-              geometry: {
-                type: 'LineString',
-                coordinates: currentCoords,
-              },
-            });
-          }
-          
-          if (upcomingCoords.length > 0) {
-            features.push({
-              type: 'Feature',
-              properties: { status: 'upcoming' },
-              geometry: {
-                type: 'LineString',
-                coordinates: upcomingCoords,
-              },
-            });
-          }
+
+          console.log('Route features with colors created:', features);
 
           setRouteGeoJson({
             type: 'FeatureCollection',
@@ -205,22 +203,41 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
           if (locations[currentStep]) {
             setTruckPosition([locations[currentStep].longitude, locations[currentStep].latitude]);
           }
+        } else {
+          console.error('No routes found in API response');
         }
       } catch (error) {
-        console.error("Error fetching route:", error);
+        console.error("Error fetching route from Mapbox:", error);
+        console.log("Using fallback straight line route");
+        
         // Fallback: create simple line between points
-        const coordinates = locations.map(loc => [loc.longitude, loc.latitude]);
-        setRouteGeoJson({
-          type: 'FeatureCollection',
-          features: [{
+        const features: any[] = [];
+        
+        for (let i = 0; i < locations.length - 1; i++) {
+          const fromLocation = locations[i];
+          const toLocation = locations[i + 1];
+          const status = getRouteStatus(toLocation, currentStep);
+          
+          features.push({
             type: 'Feature',
-            properties: { status: 'upcoming' },
+            properties: { status },
             geometry: {
               type: 'LineString',
-              coordinates,
+              coordinates: [
+                [fromLocation.longitude, fromLocation.latitude],
+                [toLocation.longitude, toLocation.latitude]
+              ],
             },
-          }],
+          });
+        }
+        
+        console.log("Fallback features created:", features);
+        
+        setRouteGeoJson({
+          type: 'FeatureCollection',
+          features,
         });
+        
         if (locations[currentStep]) {
           setTruckPosition([locations[currentStep].longitude, locations[currentStep].latitude]);
         }
@@ -239,39 +256,50 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
     : { latitude: 10.762622, longitude: 106.660172 }; // Default to Ho Chi Minh City
 
   const getLocationIcon = (locationType: string) => {
-    switch (locationType.toLowerCase()) {
+    const type = locationType.toLowerCase();
+    switch (type) {
       case 'customer':
         return '🏢';
       case 'station':
+      case 'gas_station':
         return '🏪';
       case 'compression_station':
+      case 'compressor_station':
+      case 'tank_station':
+      case 'truck_station':
         return '🏭';
       default:
+        console.log('Unknown location type:', locationType);
         return '📍';
     }
   };
 
   const getLocationColor = (locationType: string) => {
-    switch (locationType.toLowerCase()) {
+    const type = locationType.toLowerCase();
+    switch (type) {
       case 'customer':
-        return 'bg-blue-500';
+        return '#3B82F6'; // Blue for customers (matching map view)
       case 'station':
-        return 'bg-green-500';
+      case 'gas_station':
+        return '#10B981'; // Green for stations (matching map view)
       case 'compression_station':
-        return 'bg-purple-500';
+      case 'compressor_station':
+      case 'tank_station':
+      case 'truck_station':
+        return '#8B5CF6'; // Purple for compression/tank/truck stations (matching map view)
       default:
-        return 'bg-gray-500';
+        console.log('Unknown location type for color:', locationType);
+        return '#9E9E9E'; // Gray for unknown
     }
   };
 
   const getRouteStatus = (location: RouteLocation, currentStep: number) => {
-    if (location.actual_time) {
+    if (location.step < currentStep || location.actual_time) {
       return 'completed';
     } else if (location.step === currentStep) {
       return 'current';
     } else {
       return 'upcoming';
-
     }
   };
 
@@ -321,9 +349,7 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
         {/* Route Lines */}
         {routeGeoJson && (
           <Source id="route" type="geojson" data={routeGeoJson}>
-            <Layer {...completedRouteLayer} />
-            <Layer {...currentRouteLayer} />
-            <Layer {...upcomingRouteLayer} />
+            <Layer {...routeLayer} />
           </Source>
         )}
 
@@ -353,32 +379,40 @@ export function RouteMap({ routeData, token }: RouteMapProps) {
 
         {/* Location Markers */}
         {routeData.route_locations.map((location, index) => (
-          <React.Fragment key={location.step}>
+          <React.Fragment key={`${location.step}-${location.location_id}-${index}`}>
             <Marker
               longitude={location.longitude}
               latitude={location.latitude}
               anchor="bottom"
               onClick={(e: any) => {
                 e.originalEvent.stopPropagation();
-                setSelectedMarker(location.step.toString());
+                setSelectedMarker(`${location.step}-${location.location_id}-${index}`);
               }}
             >
               <div className="flex flex-col items-center cursor-pointer">
                 <div className="text-xs bg-white bg-opacity-90 rounded px-2 py-1 mb-1 shadow-sm">
                   {location.name}
                 </div>
-                <svg width="24" height="32" viewBox="0 0 24 32" className="drop-shadow-lg">
-                  <path
-                    d="M12 0C5.373 0 0 5.373 0 12c0 8.5 12 20 12 20s12-11.5 12-20c0-6.627-5.373-12-12-12z"
-                    fill={getRouteStatusColor(getRouteStatus(location, currentStep))}
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                  <circle cx="12" cy="12" r="4" fill="white" />
-                </svg>
+                <div className="relative">
+                  <svg width="24" height="32" viewBox="0 0 24 32" className="drop-shadow-lg">
+                    <path
+                      d="M12 0C5.373 0 0 5.373 0 12c0 8.5 12 20 12 20s12-11.5 12-20c0-6.627-5.373-12-12-12z"
+                      fill={getLocationColor(location.location_type)}
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                    <circle cx="12" cy="12" r="6" fill="white" />
+                  </svg>
+                  <div 
+                    className="absolute top-1 left-1/2 transform -translate-x-1/2 text-base"
+                    style={{ lineHeight: '1' }}
+                  >
+                    {getLocationIcon(location.location_type)}
+                  </div>
+                </div>
               </div>
             </Marker>
-            {selectedMarker === location.step.toString() && (
+            {selectedMarker === `${location.step}-${location.location_id}-${index}` && (
               <Popup
                 longitude={location.longitude}
                 latitude={location.latitude}
