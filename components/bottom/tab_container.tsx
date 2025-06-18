@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AddAssignmentPopup } from "./add_assignment_popup"; // Import the popup component
+import { AddAssignmentPopup } from "./add_assignment_popup";
 import { Plus, Trash, Pencil } from "lucide-react";
 import { IconButton, Box, Tooltip } from "@mui/material";
 import useSWR from "swr";
@@ -8,6 +8,27 @@ import { CLIENT_ENV } from "@/lib/env";
 import { UpdateTimePopup } from "./update_time_popup";
 import { AddAssignmentToPlan$Params } from "@/lib/commands/AddAssignmentToPlan/typing";
 import { httpPost$AddAssignmentToPlan } from "@/lib/commands/AddAssignmentToPlan/fetcher";
+import { httpPatch$UpdateAssignmentProgress } from "@/lib/commands/UpdateAssignmentProgress/fetcher";
+import { httpDelete$DeleteAssignment } from "@/lib/commands/DeleteAssignment/fetcher";
+import { useToast } from "@/components/ui/toast";
+
+// Helper function to format time to HH:MM in UTC
+const formatTimeOnly = (timeString: string | null | undefined): string => {
+  if (!timeString) return "—";
+  try {
+    const date = new Date(timeString);
+    if (isNaN(date.getTime())) return "—";
+    // Format in UTC timezone
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'UTC'
+    });
+  } catch (error) {
+    return "—";
+  }
+};
 
 // Define the types for your tab data
 interface TabData {
@@ -31,6 +52,8 @@ interface TabContainerProps {
   onTabChange: (tabId: string) => void;
   onTabClose: (tabId: string) => void;
   token: string;
+  onPlanDataChange?: () => void;
+  onAssignmentSelect?: (assignmentId: string | null) => void;
 }
 
 interface TabContentProps {
@@ -38,6 +61,11 @@ interface TabContentProps {
   onAddAssignment: (assignmentData: any) => void;
   token: string;
   hideActionButtons?: boolean;
+  onDataRefresh?: () => void;
+  onAssignmentAdded?: () => void;
+  onEditTimeRequest?: (assignment: any) => void;
+  onAssignmentSelect?: (assignmentId: string | null) => void;
+  refreshKey?: number;
 }
 
 const styleHover = {
@@ -48,13 +76,13 @@ const styleHover = {
   backgroundColor: "#e6ebe9",
 };
 
-function TabContent({ data, onAddAssignment, token, hideActionButtons }: TabContentProps) {
-  const [isAddPopupOpen, setIsAddPopupOpen] = useState(false);
-  const [showUpdateTimePopup, setShowUpdateTimePopup] = useState(false);
+function TabContent({ data, onAddAssignment, token, hideActionButtons, onDataRefresh, onAssignmentAdded, onEditTimeRequest, onAssignmentSelect, refreshKey }: TabContentProps) {
   const [open, setOpen] = useState<boolean[]>([]);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
+  const toast = useToast();
 
   const swr = useSWR(
-    data ? [`/api/dispatch/plans/${data.id}/assignments`] : null,
+    data ? [`/api/dispatch/plans/${data.id}/assignments`, refreshKey] : null,
     async () =>
       await httpGet$GetPlanAssignments(
         `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans/${data?.id}/assignments`,
@@ -70,57 +98,79 @@ function TabContent({ data, onAddAssignment, token, hideActionButtons }: TabCont
     } else {
       setOpen([]);
     }
+    // Reset selected assignment when data changes
+    setSelectedAssignmentId(null);
   }, [swr.data]);
 
-  const handleAddClick = () => {
-    setIsAddPopupOpen(true);
+  const handleEditTimeClick = (assignment: any, step: string) => {
+    if (onEditTimeRequest) {
+      onEditTimeRequest({ ...assignment, step });
+    }
   };
 
-  const handlePopupClose = () => {
-    setIsAddPopupOpen(false);
-  };
 
-  const handlePopupSave = async (params: AddAssignmentToPlan$Params) => {
-    try {
-      const response = await httpPost$AddAssignmentToPlan(
-        `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans/${data?.id}/assignments`,
-        params,
-        token
-      );
-      console.log('Add assignment API response:', response);
-      alert("Add assignment successfully!");
-      swr.mutate();
-      setIsAddPopupOpen(false);
-    } catch (error) {
-      console.error(error);
-      if ("message" in (error as any)) {
-        alert((error as any).message);
+
+  // Function to determine the next incomplete step
+  const getNextIncompleteStep = (order: any) => {
+    const steps = [
+      { key: 'start', actualField: 'actual_start_time' },
+      { key: 'loading', actualField: 'actual_tank_loading_finished' },
+      { key: 'filling', actualField: 'actual_gas_filling_finished' },
+      { key: 'delivery', actualField: 'actual_delivery_finished' },
+      { key: 'unloading', actualField: 'actual_tank_unloading_finished' },
+      { key: 'return', actualField: 'actual_end_time' }
+    ];
+
+    for (const step of steps) {
+      if (!order[step.actualField]) {
+        return step.key;
       }
     }
+    return null; // All steps completed
   };
 
-  const handleUpdateTime = async (time: string) => {
-    setShowUpdateTimePopup(false);
-    const indexOpen = open.indexOf(true);
-    if (indexOpen === -1) {
-      alert("No assignment selected!");
-    } else {
-      const id = swr.data?.[indexOpen].id;
-      if (!id) alert("Id not found");
-      const date = new Date();
-      if (time.length !== 5) alert("invalid input time");
-      let [hours, minutes] = time.split(":").map(Number);
-      date.setUTCHours(hours, minutes, 0);
-      // await httpPatch$UpdateAssignmentProgress(
-      //   `${CLIENT_ENV.BACKEND_URL}/api/dispatch/assignments/${id}/progress`,
-      //   {
-      //     event_time: date.toISOString(),
-      //   },
-      //   token
-      // );
-      // alert("Update time successfully!");
-      // swr.GetPlanAssignments.mutate();
-    }
+  const renderStepRow = (
+    order: any,
+    stepName: string,
+    estimatedField: string,
+    actualField: string,
+    stepKey: string,
+    bgClass: string
+  ) => {
+    const hasActualTime = order[actualField];
+    const nextIncompleteStep = getNextIncompleteStep(order);
+    const showEditButton = !hasActualTime && stepKey === nextIncompleteStep;
+    
+    return (
+      <tr className={bgClass}>
+        <td colSpan={5} className="py-3 px-6">
+          <div className="grid grid-cols-12 items-center gap-4">
+            <span className="text-gray-700 font-medium text-base col-span-6">{stepName}</span>
+            <div className="flex items-center gap-2 col-span-2">
+              <span className="text-emerald-600 font-semibold text-sm bg-emerald-50 px-2 py-1 rounded w-10 text-center">EST</span>
+              <span className="text-gray-800 font-mono text-base w-16">{formatTimeOnly(order[estimatedField])}</span>
+            </div>
+            <div className="flex items-center gap-2 col-span-2">
+              <span className="text-blue-600 font-semibold text-sm bg-blue-50 px-2 py-1 rounded w-10 text-center">ACT</span>
+              <span className={`font-mono text-base w-16 ${hasActualTime ? 'text-blue-800 font-semibold' : 'text-gray-400'}`}>
+                {formatTimeOnly(order[actualField])}
+              </span>
+            </div>
+            <div className="col-span-2 flex justify-end">
+              {showEditButton && (
+                <button
+                  onClick={() => handleEditTimeClick(order, stepKey)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-1 px-3 rounded text-sm transition-colors duration-200 flex items-center gap-1"
+                >
+                  <Pencil className="h-3 w-3" />
+                  Edit
+                </button>
+              )}
+            </div>
+          </div>
+        </td>
+      </tr>
+    );
   };
 
   if (!data) return null;
@@ -128,13 +178,7 @@ function TabContent({ data, onAddAssignment, token, hideActionButtons }: TabCont
   return (
     <div className="h-full overflow-auto bg-brand-F1EDEA">
       {/* Table */}
-      {showUpdateTimePopup ? (
-        <UpdateTimePopup
-          onSubmit={handleUpdateTime}
-          onClose={() => setShowUpdateTimePopup(false)}
-        />
-      ) : undefined}
-      <div className="table-modern overflow-auto mb-8" style={{ maxHeight: '40vh', width: '100%' }}>
+      <div className="table-modern overflow-auto mb-8" style={{ maxHeight: '60vh', width: '100%' }}>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
@@ -145,11 +189,17 @@ function TabContent({ data, onAddAssignment, token, hideActionButtons }: TabCont
               <th className="py-3 px-4 text-center text-base font-bold text-gray-700 uppercase tracking-wide">Status</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
+          <tbody className="bg-white divide-y divide-gray-100" key={refreshKey}>
             {swr.data?.map((order, index) => (
               <React.Fragment key={order.order_id}>
                 <tr
-                  className={`bg-white hover:bg-emerald-50 transition-colors cursor-pointer ${open[index] ? "bg-emerald-100" : ""}`}
+                  className={`bg-white hover:bg-emerald-50 transition-colors cursor-pointer ${open[index] ? "bg-emerald-100" : ""} ${selectedAssignmentId === order.id ? "ring-2 ring-blue-500" : ""}`}
+                  onClick={() => {
+                    setSelectedAssignmentId(order.id);
+                    if (onAssignmentSelect) {
+                      onAssignmentSelect(order.id);
+                    }
+                  }}
                   onDoubleClick={() => {
                     setOpen((open) =>
                       open.map((_, indexOpen) =>
@@ -169,48 +219,54 @@ function TabContent({ data, onAddAssignment, token, hideActionButtons }: TabCont
                 </tr>
                 {open[index] && (
                   <>
-                    <tr className="bg-gray-50">
-                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
-                        Start time at truck depot:
-                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_start_time || "—"}</span>
-                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_start_time || "—"}</span>
-                      </td>
-                    </tr>
-                    <tr className="bg-white">
-                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
-                        Complete loading gas tank at tank depot:
-                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_tank_loading_finished || "—"}</span>
-                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_tank_loading_finished || "—"}</span>
-                      </td>
-                    </tr>
-                    <tr className="bg-gray-50">
-                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
-                        Complete filling gas tank at compressor station:
-                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_gas_filling_finished || "—"}</span>
-                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_gas_filling_finished || "—"}</span>
-                      </td>
-                    </tr>
-                    <tr className="bg-white">
-                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
-                        Complete delivery to the customer:
-                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_delivery_finished || "—"}</span>
-                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_delivery_finished || "—"}</span>
-                      </td>
-                    </tr>
-                    <tr className="bg-gray-50">
-                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
-                        Complete unloading gas tank:
-                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_tank_unloading_finished || "—"}</span>
-                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_tank_unloading_finished || "—"}</span>
-                      </td>
-                    </tr>
-                    <tr className="bg-white">
-                      <td colSpan={5} className="py-2 px-4 text-right text-gray-600 font-medium">
-                        Returned to truck depot:
-                        <span className="font-semibold text-emerald-700 ml-2">Estimate:</span> <span className="text-gray-800">{order.estimated_end_time || "—"}</span>
-                        <span className="font-semibold text-blue-700 ml-4">Actual:</span> <span className="text-gray-800">{order.actual_end_time || "—"}</span>
-                      </td>
-                    </tr>
+                    {renderStepRow(
+                      order,
+                      "Start time at truck depot",
+                      "estimated_start_time",
+                      "actual_start_time",
+                      "start",
+                      "bg-gray-50"
+                    )}
+                    {renderStepRow(
+                      order,
+                      "Complete loading gas tank at tank depot",
+                      "estimated_tank_loading_finished",
+                      "actual_tank_loading_finished",
+                      "loading",
+                      "bg-white"
+                    )}
+                    {renderStepRow(
+                      order,
+                      "Complete filling gas tank at compressor station",
+                      "estimated_gas_filling_finished",
+                      "actual_gas_filling_finished",
+                      "filling",
+                      "bg-gray-50"
+                    )}
+                    {renderStepRow(
+                      order,
+                      "Complete delivery to the customer",
+                      "estimated_delivery_finished",
+                      "actual_delivery_finished",
+                      "delivery",
+                      "bg-white"
+                    )}
+                    {renderStepRow(
+                      order,
+                      "Complete unloading gas tank",
+                      "estimated_tank_unloading_finished",
+                      "actual_tank_unloading_finished",
+                      "unloading",
+                      "bg-gray-50"
+                    )}
+                    {renderStepRow(
+                      order,
+                      "Returned to truck depot",
+                      "estimated_end_time",
+                      "actual_end_time",
+                      "return",
+                      "bg-white"
+                    )}
                   </>
                 )}
               </React.Fragment>
@@ -218,27 +274,15 @@ function TabContent({ data, onAddAssignment, token, hideActionButtons }: TabCont
           </tbody>
         </table>
       </div>
-      {/* Add Assignment Popup */}
-      {isAddPopupOpen && (
-        <AddAssignmentPopup
-          date={data.date}
-          isOpen={isAddPopupOpen}
-          onClose={handlePopupClose}
-          onSave={handlePopupSave}
-          token={token}
-        />
-      )}
     </div>
   );
 }
 
 function TabActionButtons({
   onAdd,
-  onEditTime,
   onDelete
 }: {
   onAdd: () => void;
-  onEditTime: () => void;
   onDelete: () => void;
 }) {
   return (
@@ -255,15 +299,17 @@ function TabActionButtons({
       className="bg-white shadow-md rounded-full border border-gray-200"
     >
       <Tooltip title="Add assignment">
-        <IconButton className="rounded-full hover:bg-emerald-100 transition" onClick={onAdd}>
+        <IconButton 
+          className="rounded-full hover:bg-emerald-100 transition" 
+          onClick={(e) => {
+            console.log('Add assignment button clicked!', e);
+            onAdd();
+          }}
+        >
           <Plus className="h-5 w-5" color="#003b2a" />
         </IconButton>
       </Tooltip>
-      <Tooltip title="Edit time">
-        <IconButton className="rounded-full hover:bg-blue-100 transition" onClick={onEditTime}>
-          <Pencil className="h-5 w-5" color="#2563eb" />
-        </IconButton>
-      </Tooltip>
+
       <Tooltip title="Delete assignment">
         <IconButton className="rounded-full hover:bg-rose-100 transition" onClick={onDelete}>
           <Trash className="h-5 w-5" color="#e11d48" />
@@ -279,16 +325,114 @@ export function TabContainer({
   onTabChange,
   onTabClose,
   token,
+  onPlanDataChange,
+  onAssignmentSelect,
 }: TabContainerProps) {
   const [showAddPopup, setShowAddPopup] = React.useState(false);
   const [showUpdateTimePopup, setShowUpdateTimePopup] = React.useState(false);
+  const [selectedAssignment, setSelectedAssignment] = React.useState<any>(null);
+  const [selectedAssignmentIdForDelete, setSelectedAssignmentIdForDelete] = React.useState<string | null>(null);
+  const [refreshCounter, setRefreshCounter] = React.useState(0);
+  const toast = useToast();
+
+  const handleOpenUpdateTimePopup = () => {
+    setShowUpdateTimePopup(true);
+  };
+
+  const handleEditTimeRequest = (assignment: any) => {
+    setSelectedAssignment(assignment);
+    setShowUpdateTimePopup(true);
+  };
+
+  const handleUpdateTime = async (step: string, eventTime: string) => {
+    if (!selectedAssignment) {
+      toast.error("No assignment selected");
+      return;
+    }
+
+    try {
+      await httpPatch$UpdateAssignmentProgress(
+        `${CLIENT_ENV.BACKEND_URL}/api/dispatch/assignments/${selectedAssignment.id}/progress`,
+        {
+          event_time: eventTime,
+        },
+        token
+      );
+      toast.success("Assignment time updated successfully!");
+      setShowUpdateTimePopup(false);
+      setSelectedAssignment(null);
+      setSelectedAssignmentIdForDelete(null);
+      // Force immediate data refresh
+      setRefreshCounter(prev => prev + 1);
+      if (onPlanDataChange) {
+        onPlanDataChange();
+      }
+    } catch (error) {
+      console.error('Error updating assignment time:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to update assignment time");
+    }
+  };
 
   const handleAddClick = () => {
     setShowAddPopup(true);
   };
 
+  const handleAddPopupClose = () => {
+    setShowAddPopup(false);
+  };
+
+  const handleAssignmentAdded = () => {
+    toast.success("Assignment added successfully!");
+    setShowAddPopup(false);
+    setSelectedAssignmentIdForDelete(null);
+    // Force immediate data refresh
+    setRefreshCounter(prev => prev + 1);
+    if (onPlanDataChange) {
+      onPlanDataChange();
+    }
+  };
+
+  const handleDeleteAssignment = async () => {
+    if (!selectedAssignmentIdForDelete) {
+      toast.warning("Please select an assignment to delete");
+      return;
+    }
+
+    try {
+      await httpDelete$DeleteAssignment(
+        `${CLIENT_ENV.BACKEND_URL}/api/dispatch/assignments/${selectedAssignmentIdForDelete}`,
+        token
+      );
+      toast.success("Assignment deleted successfully!");
+      setSelectedAssignmentIdForDelete(null);
+      
+      // Force immediate data refresh
+      setRefreshCounter(prev => prev + 1);
+      if (onPlanDataChange) {
+        onPlanDataChange();
+      }
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to delete assignment");
+    }
+  };
+
   if (tabs.length === 0) {
-    return null;
+    return (
+      <div className="flex flex-col h-full bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center p-8">
+            <div className="text-gray-400 text-6xl mb-4">📅</div>
+            <div className="text-gray-600 text-xl font-semibold mb-2">
+              No Plan Selected
+            </div>
+            <div className="text-gray-500 text-base">
+              Double-click a plan from the table above to view assignments
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
@@ -333,21 +477,79 @@ export function TabContainer({
         <div className="flex space-x-2">
           <TabActionButtons
             onAdd={handleAddClick}
-            onEditTime={() => setShowUpdateTimePopup(true)}
-            onDelete={() => {/* TODO: Implement delete */}}
+            onDelete={handleDeleteAssignment}
           />
         </div>
       </div>
       <div className="flex-1 overflow-hidden">
-        {activeTabData && (
+        {activeTabData ? (
           <TabContent
             data={activeTabData.data}
             onAddAssignment={handleAddClick}
             token={token}
             hideActionButtons={true}
+            onDataRefresh={() => {
+              // This will trigger a re-render which will refresh the SWR data in TabContent
+            }}
+            onAssignmentAdded={handleAssignmentAdded}
+            onEditTimeRequest={handleEditTimeRequest}
+            onAssignmentSelect={(assignmentId) => {
+              setSelectedAssignmentIdForDelete(assignmentId);
+              if (onAssignmentSelect) {
+                onAssignmentSelect(assignmentId);
+              }
+            }}
+            refreshKey={refreshCounter}
           />
+        ) : (
+          <div className="flex-1 flex items-center justify-center bg-gray-50">
+            <div className="text-center p-8">
+              <div className="text-gray-400 text-5xl mb-4">👆</div>
+              <div className="text-gray-600 text-lg font-semibold mb-2">
+                Select a Tab
+              </div>
+              <div className="text-gray-500 text-base">
+                Click on a tab above to view plan details
+              </div>
+            </div>
+          </div>
         )}
       </div>
+      
+      {/* Add Assignment Popup */}
+      {showAddPopup && activeTabData && (
+        <AddAssignmentPopup
+          date={activeTabData.data.date}
+          isOpen={showAddPopup}
+          onClose={handleAddPopupClose}
+          onSave={async (params) => {
+            try {
+              await httpPost$AddAssignmentToPlan(
+                `${CLIENT_ENV.BACKEND_URL}/api/dispatch/plans/${activeTabData.data.id}/assignments`,
+                params,
+                token
+              );
+              handleAssignmentAdded();
+            } catch (error) {
+              console.error('Error adding assignment:', error);
+              toast.error(error instanceof Error ? error.message : "Failed to add assignment");
+            }
+          }}
+          token={token}
+        />
+      )}
+
+      {/* Update Time Popup */}
+      {showUpdateTimePopup && selectedAssignment && (
+        <UpdateTimePopup
+          assignmentData={selectedAssignment}
+          onSubmit={handleUpdateTime}
+          onClose={() => {
+            setShowUpdateTimePopup(false);
+            setSelectedAssignment(null);
+          }}
+        />
+      )}
     </div>
   );
-}
+} 

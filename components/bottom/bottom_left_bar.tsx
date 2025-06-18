@@ -2,17 +2,16 @@
 import Image from "next/image";
 import { Box, IconButton, Button, FormControl, Tooltip } from "@mui/material";
 import { useMemo } from "react";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, Play } from "lucide-react";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Configure dayjs to use GMT+7
+// Configure dayjs to use GMT+0 (UTC) for consistency
 dayjs.extend(utc);
 dayjs.extend(timezone);
-dayjs.tz.setDefault('Asia/Bangkok');
 
 const styleHover = {
   "&:hover": {
@@ -33,7 +32,7 @@ const styleHover2 = {
 
 const generateLastFiveDates = (): { value: string; displayText: string }[] => {
   const dates: { value: string; displayText: string }[] = [];
-  const today = dayjs().tz('Asia/Bangkok');
+  const today = dayjs().utc();
 
   for (let i = 0; i < 5; i++) {
     const date = today.subtract(i, 'day');
@@ -47,17 +46,19 @@ const generateLastFiveDates = (): { value: string; displayText: string }[] => {
 };
 
 type Props = {
-  selectedDate: Date | null;
-  onDropdownDateChange: (date: Date | null) => void;
-  onAddSchedule: () => void;
-  onDeleteSchedule: () => void;
+  selectedDate: string | null;
+  onDropdownDateChange: (date: string | null) => void;
+  onAddPlan: () => void;
+  onDeletePlan: () => void;
+  onExecutePlan: () => void;
 };
 
 export function BottomLeftBar({
   selectedDate,
   onDropdownDateChange,
-  onAddSchedule,
-  onDeleteSchedule,
+  onAddPlan,
+  onDeletePlan,
+  onExecutePlan,
 }: Props) {
   const dateOptions = useMemo(() => generateLastFiveDates(), []);
 
@@ -70,26 +71,27 @@ export function BottomLeftBar({
         >
           <input
             type="date"
-            value={selectedDate ? dayjs(selectedDate).tz('Asia/Bangkok').format('YYYY-MM-DD') : ''}
+            value={selectedDate || ''}
             onChange={e => {
               const value = e.target.value;
-              if (value) {
-                onDropdownDateChange(dayjs.tz(value, 'Asia/Bangkok').toDate());
-              } else {
-                onDropdownDateChange(null);
-              }
+              onDropdownDateChange(value || null);
             }}
             className="border rounded-lg px-3 py-2 shadow-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all duration-200 bg-gray-50 text-base font-medium"
           />
         </FormControl>
         <div className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1 shadow-sm">
-          <Tooltip title="Add schedule">
-            <IconButton className="rounded-full hover:bg-emerald-100 transition" onClick={onAddSchedule}>
+          <Tooltip title="Add plan">
+            <IconButton className="rounded-full hover:bg-emerald-100 transition" onClick={onAddPlan}>
               <Plus className="h-5 w-5" color="#003b2a" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Delete schedule">
-            <IconButton className="rounded-full hover:bg-rose-100 transition" onClick={onDeleteSchedule}>
+          <Tooltip title="Execute plan">
+            <IconButton className="rounded-full hover:bg-blue-100 transition" onClick={onExecutePlan}>
+              <Play className="h-5 w-5" color="#2563eb" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete plan">
+            <IconButton className="rounded-full hover:bg-rose-100 transition" onClick={onDeletePlan}>
               <Trash className="h-5 w-5" color="#e11d48" />
             </IconButton>
           </Tooltip>

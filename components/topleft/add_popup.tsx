@@ -220,7 +220,6 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: Props)
       { key: "required_volume", label: "Volume" },
       { key: "delivery_time", label: "Date" },
       { key: "priority_level", label: "Priority" },
-      { key: "status", label: "Status" },
     ],
     stations: [
       { key: "id", label: "ID" },
@@ -287,11 +286,11 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: Props)
         <h2 className="text-2xl font-bold text-emerald-700 mb-2">Add {selectedOption && selectedOption.charAt(0).toUpperCase() + selectedOption.slice(1)}</h2>
         <form className="flex flex-col gap-4">
           {currentAttributes.map((attribute: any, index: number) => {
-            const fieldKey = attribute.key;
-            let inputType = "text";
-            let placeholder = `Enter ${attribute.label.toLowerCase()}`;
-            let isDropdown = false;
-            let dropdownOptions: string[] = [];
+                const fieldKey = attribute.key;
+                let inputType = "text";
+                let placeholder = `Enter ${attribute.label.toLowerCase()}`;
+                let isDropdown = false;
+                let dropdownOptions: string[] = [];
             if (fieldKey === "loading_time" || fieldKey === "count" || fieldKey === "capacity" || fieldKey === "capacity_m3") inputType = "number";
             if (fieldKey === "delivery_time") inputType = "date";
             if (fieldKey === "status" && selectedOption === "orders") { isDropdown = true; dropdownOptions = ["PENDING","IN_PROGRESS","ASSIGNED","COMPLETED","CANCELLED"]; placeholder = "Select status"; }
@@ -304,32 +303,32 @@ const AddDataPopup = ({ isOpen, onClose, onSave, selectedOption, token }: Props)
             if (selectedOption === "trucks" && fieldKey === "station_id") { isDropdown = true; dropdownOptions = []; const stationsData = swr.GetResourcesStations.data; stationsData?.forEach(station => { dropdownOptions.push(station.id); }); placeholder = "Select Station"; }
             if (selectedOption === "compressors" && fieldKey === "compressor_type_id") { isDropdown = true; dropdownOptions = []; const compressorTypesData = swr.GetResourcesCompressorTypes.data; compressorTypesData?.forEach(type => { dropdownOptions.push(type.id); }); placeholder = "Select Compressor Type"; }
             if (selectedOption === "compressors" && fieldKey === "compressor_station_id") { isDropdown = true; dropdownOptions = []; const compressorStationsData = swr.GetResourcesCompressionStations.data; compressorStationsData?.forEach(station => { dropdownOptions.push(station.id); }); placeholder = "Select Compressor Station"; }
-            return (
+                return (
               <div key={index} className="flex flex-col gap-1">
                 <label className="text-base font-semibold text-gray-700 mb-1">{attribute.label}</label>
-                {isDropdown ? (
-                  <select
-                    value={formData[fieldKey] || ""}
+                    {isDropdown ? (
+                      <select
+                        value={formData[fieldKey] || ""}
                     onChange={(e) => handleInputChange(fieldKey, e.target.value)}
                     className="rounded-lg border border-gray-300 px-3 py-2 text-base focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 bg-gray-50"
-                  >
+                      >
                     <option value="" disabled>{placeholder}</option>
-                    {dropdownOptions.map((option, idx) => (
+                        {dropdownOptions.map((option, idx) => (
                       <option key={idx} value={option}>{option}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type={inputType}
-                    placeholder={placeholder}
-                    value={formData[fieldKey] || ""}
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={inputType}
+                        placeholder={placeholder}
+                        value={formData[fieldKey] || ""}
                     onChange={(e) => handleInputChange(fieldKey, e.target.value)}
                     className="rounded-lg border border-gray-300 px-3 py-2 text-base focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all duration-200 bg-gray-50"
-                  />
-                )}
-              </div>
-            );
-          })}
+                      />
+                    )}
+                  </div>
+                );
+              })}
         </form>
         <div className="flex gap-4 mt-6 justify-end">
           <button

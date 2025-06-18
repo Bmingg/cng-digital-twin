@@ -1,20 +1,20 @@
 import { z } from "zod";
 import {
-  UpdateAssignmentProgress$Params,
-  UpdateAssignmentProgress$Result,
+  ExecutePlan$Params,
+  ExecutePlan$Result,
 } from "./typing";
 
 const ErrorMessage = z.object({
   detail: z.string(),
 });
 
-export async function httpPatch(
+export async function httpPost(
   url: string,
-  params: UpdateAssignmentProgress$Params,
+  params: ExecutePlan$Params,
   token: string
-): Promise<UpdateAssignmentProgress$Result> {
+): Promise<ExecutePlan$Result> {
   const response = await fetch(url, {
-    method: "PATCH",
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
@@ -25,7 +25,7 @@ export async function httpPatch(
   
   if (!response.ok) {
     const text = await response.text();
-    console.error('UpdateAssignmentProgress API Error:', {
+    console.error('ExecutePlan API Error:', {
       status: response.status,
       statusText: response.statusText,
       url: url,
@@ -55,8 +55,8 @@ export async function httpPatch(
   
   const text = await response.text();
   const data = JSON.parse(text);
-  const result = UpdateAssignmentProgress$Result.parse(data);
+  const result = ExecutePlan$Result.parse(data);
   return result;
 }
 
-export const httpPatch$UpdateAssignmentProgress = httpPatch;
+export const httpPost$ExecutePlan = httpPost; 

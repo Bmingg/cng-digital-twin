@@ -17,6 +17,7 @@ import { TopLeftBar } from "./top_left_bar";
 import { httpDelete$DeleteResources } from "@/lib/commands/DeleteResources/fetcher";
 import { AddDataPopup } from './add_popup';
 import { EditDataPopup } from './edit_popup';
+import { useToast } from "@/components/ui/toast";
 import { httpPost$CreateTruckTypes } from "@/lib/commands/CreateTruckTypes/fetcher";
 import { httpPost$CreateOrders } from "@/lib/commands/CreateOrders/fetcher";
 import { httpPost$CreateGasTankTypes } from "@/lib/commands/CreateGasTankTypes/fetcher";
@@ -61,6 +62,7 @@ export function DataTable({ token }: Props) {
   const [filterPanelOpen, setFilterPanelOpen] = React.useState(false);
   const [filterRows, setFilterRows] = React.useState<any[]>([]);
   const [orderDay, setOrderDay] = React.useState<string>("");
+  const toast = useToast();
   
   // Helper: get available operators for a field
   const getOperators = (col: any) => {
@@ -117,6 +119,7 @@ export function DataTable({ token }: Props) {
       await swr.GetResourcesTruckTypes.mutate(undefined, { revalidate: true });
     }
     if (selectedOption === "orders") {
+      console.log('DataTable - updating order with data:', data);
       await httpPut$UpdateOrders(
         `${CLIENT_ENV.BACKEND_URL}/api/orders`,
         data,
@@ -236,6 +239,8 @@ export function DataTable({ token }: Props) {
 
   const handleEdit = () => {
     if (!selectedRow) return;
+    console.log('DataTable - handleEdit called with selectedRow:', selectedRow, 'selectedOption:', selectedOption);
+    console.log('DataTable - available orders data:', swr.GetResourcesAllOrders.data);
     setIsEditPopupOpen(true);
   }
 
@@ -496,7 +501,7 @@ export function DataTable({ token }: Props) {
           (truck: any) => truck.truck_type_id === selectedRow
         );
         if (trucksUsingType) {
-          alert("Cannot delete this truck type because there are still trucks using it.");
+          toast.error("Cannot delete this truck type because there are still trucks using it.");
           return;
         }
         await httpDelete$DeleteResources(
@@ -512,7 +517,7 @@ export function DataTable({ token }: Props) {
           (tank: any) => tank.gas_tank_type_id === selectedRow
         );
         if (tanksUsingType) {
-          alert("Cannot delete this gas tank type because there are still gas tanks using it.");
+          toast.error("Cannot delete this gas tank type because there are still gas tanks using it.");
           return;
         }
         await httpDelete$DeleteResources(
@@ -528,7 +533,7 @@ export function DataTable({ token }: Props) {
           (compressor: any) => compressor.compressor_type_id === selectedRow
         );
         if (compressorsUsingType) {
-          alert("Cannot delete this compressor type because there are still compressors using it.");
+          toast.error("Cannot delete this compressor type because there are still compressors using it.");
           return;
         }
         await httpDelete$DeleteResources(
@@ -596,7 +601,7 @@ export function DataTable({ token }: Props) {
       }
     } catch (error) {
       console.error("Error deleting resource:", error);
-      alert("Failed to delete resource. Please try again.");
+      toast.error("Failed to delete resource. Please try again.");
     }
   };
 
@@ -879,9 +884,15 @@ export function DataTable({ token }: Props) {
           orderDay={orderDay}
           setOrderDay={setOrderDay}
         />
-        <div className="flex-1 min-h-0 flex items-center justify-center bg-gray-100">
-          <div className="text-gray-500 text-lg">
-            Please select an option from the dropdown
+        <div className="flex-1 min-h-0 flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200">
+          <div className="text-center p-8">
+            <div className="text-gray-400 text-6xl mb-4">📊</div>
+            <div className="text-gray-600 text-xl font-semibold mb-2">
+              Select a Resource Type
+            </div>
+            <div className="text-gray-500 text-base">
+              Choose an option from the dropdown above to view and manage data
+            </div>
           </div>
         </div>
       </div>

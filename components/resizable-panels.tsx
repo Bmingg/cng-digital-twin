@@ -2,9 +2,9 @@
 
 import React, { useState, useRef, useCallback } from "react";
 import { DataTable } from "./topleft/data_table";
-import { ScheduleTable, TableConfig } from "./bottom/schedule_table";
+import { PlanTable, TableConfig } from "./bottom/plan_table";
 import { TabContainer } from "./bottom/tab_container";
-import { MapView } from "./map/map_view";
+import { TopRightPanel } from "./top-right-panel";
 import { httpGet$GetResourcesCompressionStations } from "@/lib/commands/GetResourcesCompressionStations/fetcher";
 import { CLIENT_ENV } from "@/lib/env";
 import useSWR from "swr";
@@ -158,13 +158,13 @@ type Props = {
 export function ResizablePanels({ token }: Props) {
   const [openTabs, setOpenTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState<string | undefined>();
+  const [planRefreshCounter, setPlanRefreshCounter] = useState(0);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | undefined>();
 
-  // Sample coordinates for demonstration
-  const sampleCoordinates = [
-    { id: "station1", latitude: 10.762622, longitude: 106.660172, name: "S1" },
-    { id: "station2", latitude: 10.775658, longitude: 106.700417, name: "S2" },
-    { id: "station3", latitude: 10.783333, longitude: 106.666667, name: "S3" },
-  ];
+  // Function to refresh plan data when assignments change
+  const refreshPlanData = () => {
+    setPlanRefreshCounter(prev => prev + 1);
+  };
 
   const handleRowDoubleClick = (row: TableConfig["data"][0] & { delivery_time?: string }) => {
     const tabId = row.id;
@@ -193,6 +193,7 @@ export function ResizablePanels({ token }: Props) {
       setActiveTab(tabId);
     }
   };
+
   const closeTab = (tabId: string) => {
     setOpenTabs((prev) => {
       const newTabs = prev.filter((tab) => tab.id !== tabId);
@@ -204,6 +205,10 @@ export function ResizablePanels({ token }: Props) {
       }
       return newTabs;
     });
+  };
+
+  const handleAssignmentSelect = (assignmentId: string | null) => {
+    setSelectedAssignmentId(assignmentId || undefined);
   };
 
   return (
@@ -218,7 +223,10 @@ export function ResizablePanels({ token }: Props) {
             }
             rightContent={
               <div className="h-full">
-                <MapView coordinates={sampleCoordinates} />
+                <TopRightPanel 
+                  token={token} 
+                  selectedAssignmentId={selectedAssignmentId}
+                />
               </div>
             }
           />
@@ -227,9 +235,10 @@ export function ResizablePanels({ token }: Props) {
           <VerticalPanels
             leftContent={
               <div className="h-full">
-                <ScheduleTable
+                <PlanTable
                   onRowDoubleClick={handleRowDoubleClick}
                   token={token}
+                  refreshCounter={planRefreshCounter}
                 />
               </div>
             }
@@ -241,6 +250,8 @@ export function ResizablePanels({ token }: Props) {
                   activeTab={activeTab}
                   onTabChange={setActiveTab}
                   onTabClose={closeTab}
+                  onPlanDataChange={refreshPlanData}
+                  onAssignmentSelect={handleAssignmentSelect}
                 />
               </div>
             }

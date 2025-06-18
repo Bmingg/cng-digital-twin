@@ -223,21 +223,19 @@ const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selecte
 
   // Reset form data when selectedOption changes or popup opens
   useEffect(() => {
-  //   if (isOpen) {
-  //     const initialFormData = {};
-  //     currentAttributes.forEach(attribute => {
-  //       // Use the key directly from the attribute object
-  //       initialFormData[attribute.key] = '';
-  //     });
-  //     setFormData(initialFormData);
-  //   }
-  // }, [isOpen, selectedOption, currentAttributes]);
-    if (selectedRow && swr && isOpen && !isFormInitialized) {
+    if (selectedRow && isOpen && !isFormInitialized) {
       // Load initial data based on selectedRow and selectedOption
       let rowData: any = null;
       
+      console.log('Edit popup - selectedRow:', selectedRow, 'selectedOption:', selectedOption);
+      
       if (selectedOption === "orders") {
-        rowData = swr.GetResourcesAllOrders?.data?.find(item => item.id?.toString() === selectedRow?.toString()) || null;
+        const ordersData = swr.GetResourcesAllOrders?.data;
+        console.log('Edit popup - orders data:', ordersData);
+        if (ordersData && Array.isArray(ordersData)) {
+          rowData = ordersData.find(item => item.id?.toString() === selectedRow?.toString());
+          console.log('Edit popup - found order data:', rowData);
+        }
       } else if (selectedOption === "customers") {
         rowData = swr.GetResourcesCustomers?.data?.find(item => item.id?.toString() === selectedRow?.toString()) || null;
       } else if (selectedOption === "gasTanks") {
@@ -257,16 +255,25 @@ const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selecte
       } else if (selectedOption === "stations") {
         rowData = swr.GetResourcesStations?.data?.find(item => item.id?.toString() === selectedRow?.toString()) || null;
       }
-      // If rowData is found, set the formData with the existing values
-      // This assumes that the rowData has the same keys as the attributes
-      // Add other resource types as needed
       
+      // If rowData is found, set the formData with the existing values
       if (rowData) {
+        console.log('Edit popup - setting form data:', rowData);
         setFormData(rowData);
         setIsFormInitialized(true);
+      } else {
+        console.log('Edit popup - no row data found for selectedRow:', selectedRow);
       }
     }
   }, [selectedRow, selectedOption, swr, isFormInitialized, isOpen]);
+  
+  // Reset form initialization when popup closes or selectedRow changes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsFormInitialized(false);
+      setFormData({});
+    }
+  }, [isOpen]);
   
   useEffect(() => {
     setIsFormInitialized(false);
@@ -282,14 +289,23 @@ const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selecte
 
   const handleSave = () => {
     if (onSave) {
-      // Convert delivery_time to GMT+7 if it exists
-      const formDataWithTimezone = { ...formData };
+      // Convert delivery_time to proper format if it exists
+      const formDataWithTimezone: any = { ...formData };
       if (formDataWithTimezone['delivery_time']) {
+        // Convert to YYYY-MM-DD format using Bangkok timezone (same as add popup)
         formDataWithTimezone['delivery_time'] = dayjs(formDataWithTimezone['delivery_time'])
           .tz('Asia/Bangkok')
           .format('YYYY-MM-DD');
       }
-      onSave(formDataWithTimezone);
+      
+      // For orders, only send the required fields (exclude customer_id)
+      if (selectedOption === "orders") {
+        const { customer_id, ...orderData } = formDataWithTimezone;
+        console.log('Edit popup - sending order data:', orderData);
+        onSave(orderData);
+      } else {
+        onSave(formDataWithTimezone);
+      }
     }
     // Reset form
     setFormData({});
@@ -335,6 +351,8 @@ const EditDataPopup = ({ isOpen, onClose, onSave, selectedOption, token, selecte
             if (selectedOption === "compressors" && fieldKey === "compressor_station_id") { isDropdown = true; dropdownOptions = []; const compressorStationsData = swr.GetResourcesCompressionStations.data; compressorStationsData?.forEach(station => { dropdownOptions.push(station.id); }); placeholder = "Select Compressor Station"; }
             // Make IDs read-only for resources with auto-generated IDs
             if (fieldKey === "id" && (selectedOption === "orders" || selectedOption === "customers" || selectedOption === "trucks" || selectedOption === "gasTanks" || selectedOption === "compressors")) { isReadonly = true; }
+            // Make customer_id read-only for orders since it's not included in update API
+            if (selectedOption === "orders" && fieldKey === "customer_id") { isReadonly = true; }
             return (
               <div key={index} className="flex flex-col gap-1">
                 <label className="text-base font-semibold text-gray-700 mb-1">{attribute.label}</label>

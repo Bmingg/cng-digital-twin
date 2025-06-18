@@ -27,11 +27,11 @@ export function TopBar({ user }: Props) {
   };
   const role = user?.is_superuser ? "Admin" : "Dispatcher";
   return (
-    <div className="flex items-center justify-between h-16 px-6 py-3 bg-white shadow-md rounded-xl border border-gray-200 mb-4">
+    <div className="flex items-center justify-between h-12 px-6 py-2 bg-white shadow-md rounded-xl border border-gray-200 mb-2">
       <div className="flex items-center gap-3">
         <div className="flex flex-col">
-          <span className="text-gray-800 font-semibold text-lg leading-tight">{role}</span>
-          <span className="text-gray-500 text-base leading-tight">{user?.email}</span>
+          <span className="text-gray-800 font-semibold text-base leading-tight">{role}</span>
+          <span className="text-gray-500 text-sm leading-tight">{user?.email}</span>
         </div>
       </div>
       <div className="flex items-center gap-3">
@@ -39,8 +39,8 @@ export function TopBar({ user }: Props) {
           <Button
             component={Link}
             href="/admin"
-            className="rounded-full px-5 py-2 font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition shadow-sm"
-            size="medium"
+            className="rounded-full px-4 py-1 font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition shadow-sm"
+            size="small"
             variant="contained"
             style={{ boxShadow: 'none' }}
           >
@@ -49,8 +49,8 @@ export function TopBar({ user }: Props) {
         )}
         <Button
           onClick={handleLogout}
-          className="rounded-full px-5 py-2 font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 transition shadow-sm"
-          size="medium"
+          className="rounded-full px-4 py-1 font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 transition shadow-sm"
+          size="small"
           variant="contained"
           style={{ boxShadow: 'none' }}
         >
